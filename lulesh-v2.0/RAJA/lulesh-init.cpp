@@ -499,7 +499,7 @@ void
 Domain::CreateRegionIndexSets(Int_t nr, Int_t balance)
 {
 #if USE_MPI
-   Index_t myRank;
+   int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
    srand(myRank);
 #else

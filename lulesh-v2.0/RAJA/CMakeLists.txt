@@ -12,7 +12,6 @@
 
 set (lulesh_sources
   lulesh.cpp
-  lulesh-comm.cpp
   lulesh-init.cpp
   lulesh-util.cpp
   lulesh-viz.cpp)
@@ -63,6 +62,37 @@ target_compile_definitions(
   -DLULESH_DEVICE= 
 )
 
+blt_add_executable(
+  NAME lulesh-v2.0-RAJA-seq-grad.exe
+  SOURCES ${lulesh_sources}
+  DEPENDS_ON ${lulesh_depends})
+
+target_compile_options(
+  lulesh-v2.0-RAJA-seq-grad.exe
+  PRIVATE
+  ${lulesh_compile_options})
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-grad.exe
+  PRIVATE 
+  -DUSE_MPI=0)
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-grad.exe
+  PRIVATE
+  -DUSE_CASE=1)
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-grad.exe
+  PUBLIC
+  -DLULESH_DEVICE= 
+)
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-grad.exe
+  PUBLIC
+  -DGRADIENT=1 
+)
+
 if (ENABLE_OPENMP)
   blt_add_executable(
     NAME lulesh-v2.0-RAJA-omp.exe
@@ -80,6 +110,134 @@ if (ENABLE_OPENMP)
     -DLULESH_DEVICE= 
   )
 endif ()
+
+if (ENABLE_OPENMP)
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-omp-gradient.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-gradient.exe
+    PRIVATE 
+    -DUSE_MPI=0)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-gradient.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-gradient.exe
+    PUBLIC
+    -DGRADIENT=1 
+  )
+endif ()
+
+
+
+
+
+blt_add_executable(
+  NAME lulesh-v2.0-RAJA-seq-mpi.exe
+  SOURCES ${lulesh_sources}
+  DEPENDS_ON ${lulesh_depends})
+
+target_compile_options(
+  lulesh-v2.0-RAJA-seq-mpi.exe
+  PRIVATE
+  ${lulesh_compile_options})
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi.exe
+  PRIVATE 
+  -DUSE_MPI=1)
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi.exe
+  PRIVATE
+  -DUSE_CASE=1)
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi.exe
+  PUBLIC
+  -DLULESH_DEVICE= 
+)
+
+blt_add_executable(
+  NAME lulesh-v2.0-RAJA-seq-mpi-grad.exe
+  SOURCES ${lulesh_sources}
+  DEPENDS_ON ${lulesh_depends})
+
+target_compile_options(
+  lulesh-v2.0-RAJA-seq-mpi-grad.exe
+  PRIVATE
+  ${lulesh_compile_options})
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi-grad.exe
+  PRIVATE 
+  -DUSE_MPI=1)
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi-grad.exe
+  PRIVATE
+  -DUSE_CASE=1)
+
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi-grad.exe
+  PUBLIC
+  -DLULESH_DEVICE= 
+)
+target_compile_definitions(
+  lulesh-v2.0-RAJA-seq-mpi-grad.exe
+  PUBLIC
+  -DGRADIENT=1 
+)
+
+if (ENABLE_OPENMP)
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-omp-mpi.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-mpi.exe
+    PRIVATE 
+    -DUSE_MPI=1)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-mpi.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+endif ()
+
+if (ENABLE_OPENMP)
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-omp-mpi-gradient.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-mpi-gradient.exe
+    PRIVATE 
+    -DUSE_MPI=1)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-mpi-gradient.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-omp-mpi-gradient.exe
+    PUBLIC
+    -DGRADIENT=1 
+  )
+endif ()
+
+
+
 
 if (ENABLE_CUDA)
   configure_file(

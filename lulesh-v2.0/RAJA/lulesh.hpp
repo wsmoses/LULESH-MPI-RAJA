@@ -1,4 +1,4 @@
-
+#pragma once
 #include "RAJA/RAJA.hpp"
 
 //

@@ -12,27 +12,26 @@
 
 cmake_minimum_required(VERSION 3.4)
 
+set(CMAKE_C_COMPILER   "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang" CACHE PATH "")
+set(CMAKE_CXX_COMPILER "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang++" CACHE PATH "")
+set(CMAKE_LINKER       "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang++" CACHE PATH "")
+set (ENABLE_OPENMP ON)
+set(CMAKE_CXX_FLAGS " -I /mnt/sabrent/wmoses/llvm13/buildallfast/projects/openmp/runtime/src -I /usr/lib/x86_64-linux-gnu/openmpi/include -flegacy-pass-manager -Xclang -load -Xclang /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so -fno-vectorize -fno-unroll-loops -fopenmp -lmpi -O3 -ffast-math -mllvm -enzyme-print-type" CACHE STRING "")
+
+set(BLT_CXX_STD "c++11")
 project(RajaProxies LANGUAGES CXX)
 
 option(ENABLE_LULESH_ONE "Build LULESH v1.0" On)
 option(ENABLE_LULESH_TWO "Build LULESH v2.0" On)
-option(ENABLE_KRIPKE "Build Kripke" On)
-option(ENABLE_COMD "Build CoMD" On)
 
 set (ENABLE_TESTS Off CACHE Bool "Don't build tests")
 set (ENABLE_EXAMPLES Off CACHE Bool "Don't build examples")
 set (ENABLE_EXERCISES Off CACHE Bool "Don't build exercises")
 
-if (PROXIES_ENABLE_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
-endif()
 
 ################################
 # BLT
 ################################
-if (ENABLE_KRIPKE)
-  set(BLT_CXX_STD "c++14" CACHE STRING "Version of C++ Standard")
-endif()
 if (NOT EXISTS ${PROJECT_SOURCE_DIR}/blt/SetupBLT.cmake)
   message(FATAL_ERROR "\
   The BLT submodule is not present. \
@@ -44,10 +43,6 @@ include(${PROJECT_SOURCE_DIR}/blt/SetupBLT.cmake)
 
 add_subdirectory(tpl/RAJA)
 
-if (ENABLE_DOCUMENTATION)
-  add_subdirectory(docs)
-endif ()
-
 if (ENABLE_LULESH_ONE)
   message(STATUS "Building LULESH v1.0")
   add_subdirectory(lulesh-v1.0)
@@ -56,27 +51,4 @@ endif ()
 if (ENABLE_LULESH_TWO)
   message(STATUS "Building LULESH v2.0")
   add_subdirectory(lulesh-v2.0)
-endif ()
-
-if (ENABLE_KRIPKE)
-  if (ENABLE_CUDA)
-    set(KRIPKE_ARCH "Cuda")
-    set(kripke_compile_options --expt-extended-lambda -arch=${CUDA_ARCH})
-  elseif (ENABLE_OPENMP)
-    set(KRIPKE_ARCH "OpenMP")
-  else()
-    set(KRIPKE_ARCH "Sequential")
-  endif()
-  message(STATUS "Building Kripke")
-  add_subdirectory(kripke)
-
-  target_compile_options(kripke
-    PUBLIC
-    ${kripke_compile_options})
-endif ()
-
-
-if (ENABLE_COMD)
-  message(STATUS "Building CoMD v1.0")
-  add_subdirectory(CoMD)
 endif ()
