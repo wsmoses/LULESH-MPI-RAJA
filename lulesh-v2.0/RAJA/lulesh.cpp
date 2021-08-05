@@ -2249,75 +2249,13 @@ void ApplyMaterialPropertiesForElems(Domain* domain)
     Real_t *bvc = elemMemPool.allocate(numElem) ;
     Real_t *pbvc = elemMemPool.allocate(numElem) ;
     Real_t *pHalfStep = elemMemPool.allocate(numElem) ;
-
-
-    RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-         [=] LULESH_DEVICE (int i) {
-       vnewc[i] = domain->vnew(i) ;
-    } );
-
-    // Bound the updated relative volumes with eosvmin/max
-    if (eosvmin != Real_t(0.)) {
-       RAJA::forall<elem_exec_policy>(domain->getElemISet(), 
-            [=] LULESH_DEVICE (int i) {
-          if (vnewc[i] < eosvmin)
-             vnewc[i] = eosvmin ;
-       } );
-    }
-
-    if (eosvmax != Real_t(0.)) {
-       RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-            [=] LULESH_DEVICE (int i) {
-          if (vnewc[i] > eosvmax)
-             vnewc[i] = eosvmax ;
-       } );
-    }
-
-    // check for negative element volume
-    RAJA::ReduceMin<reduce_policy, Real_t> minvol(Real_t(1.0e+20));
-
-    // This check may not make perfect sense in LULESH, but
-    // it's representative of something in the full code -
-    // just leave it in, please
-    RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-         [=] LULESH_DEVICE (int i) {
-       Real_t vc = domain->v(i) ;
-       if (eosvmin != Real_t(0.)) {
-          if (vc < eosvmin)
-             vc = -1.0 ;
-       }
-       if (eosvmax != Real_t(0.)) {
-          if (vc > eosvmax)
-             vc = -1.0 ;
-       }
-
-       minvol.min(vc);
-    } );
-
-    if (Real_t(minvol) <= 0.) {
-#if USE_MPI             
-       MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
-#else
-       exit(VolumeError);
-#endif
-    }
-
-    for (Int_t reg_num=0 ; reg_num < domain->numReg() ; reg_num++) {
-       Int_t rep;
-       //Determine load imbalance for this region
-       //round down the number with lowest cost
-       if(reg_num < domain->numReg()/2)
+    
+    auto reg_num = 0;
+    Int_t rep;
 	 rep = 1;
-       //you don't get an expensive region unless you at least have 5 regions
-       else if(reg_num < (domain->numReg() - (domain->numReg()+15)/20))
-         rep = 1 + domain->cost();
-       //very expensive regions
-       else
-	 rep = 10 * (1+ domain->cost());
        EvalEOSForElems(domain, vnewc, p_old, compression, compHalfStep,
                        work, p_new, e_new, q_new, bvc, pbvc, pHalfStep,
                        reg_num, rep);
-    }
 
     elemMemPool.release(&pHalfStep) ;
     elemMemPool.release(&pbvc) ;
@@ -2355,15 +2293,15 @@ void UpdateVolumesForElems(Domain* domain,
 RAJA_STORAGE
 void LagrangeElements(Domain* domain, Index_t RAJA_UNUSED_ARG(numElem))
 {
-  CalcLagrangeElements(domain) ;
+  //CalcLagrangeElements(domain) ;
 
   /* Calculate Q.  (Monotonic q option requires communication) */
-  CalcQForElems(domain) ;
+  //CalcQForElems(domain) ;
 
   ApplyMaterialPropertiesForElems(domain) ;
 
-  UpdateVolumesForElems(domain,
-                        domain->v_cut()) ;
+  //UpdateVolumesForElems(domain,
+  //                      domain->v_cut()) ;
 }
 
 /******************************************/
@@ -2461,7 +2399,7 @@ void LagrangeLeapFrog(Domain* domain)
 
    /* calculate nodal forces, accelerations, velocities, positions, with
     * applied boundary conditions and slide surface considerations */
-   LagrangeNodal(domain);
+   //LagrangeNodal(domain);
 
 
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
@@ -2471,6 +2409,7 @@ void LagrangeLeapFrog(Domain* domain)
     * material states */
    LagrangeElements(domain, domain->numElem());
 
+   /*
 #if USE_MPI   
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
    CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
@@ -2497,6 +2436,7 @@ void LagrangeLeapFrog(Domain* domain)
    CommSyncPosVel(*domain) ;
 #endif
 #endif   
+   */
 }
 
 
@@ -2597,8 +2537,11 @@ int main(int argc, char *argv[])
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
       TimeIncrement(*locDom) ;
-      LagrangeLeapFrog(locDom) ;
+#ifdef GRADIENT
       __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
+#else
+      LagrangeLeapFrog(locDom) ;
+#endif
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
          printf("cycle = %d, time = %e, dt=%e\n",
