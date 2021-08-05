@@ -166,6 +166,7 @@ Additional BSD Notice
 lulesh2::MemoryPool< Real_t > elemMemPool ;
 
 auto __enzyme_inactivefn1 = RAJA::util::Registry<RAJA::util::PluginStrategy>::begin;
+
 /******************************************/
 
 /* Work Routines */
@@ -714,6 +715,222 @@ void CalcFBHourglassForceForElems( Domain* domain,
                                    Real_t *dvdx, Real_t *dvdy, Real_t *dvdz,
                                    Real_t hourg, Index_t numElem)
 {
+  /*************************************************
+   *
+   *     FUNCTION: Calculates the Flanagan-Belytschko anti-hourglass
+   *               force.
+   *
+   *************************************************/
+  
+   RAJA_UNUSED_VAR(numElem);
+#if defined(OMP_FINE_SYNC)
+   Real_t *fx_elem = elemMemPool.allocate(numElem*8) ;
+   Real_t *fy_elem = elemMemPool.allocate(numElem*8) ;
+   Real_t *fz_elem = elemMemPool.allocate(numElem*8) ;
+#endif
+
+/*************************************************/
+/*    compute the hourglass modes */
+
+
+   RAJA::forall<elem_exec_policy>(domain->getElemISet(),
+      [=] LULESH_DEVICE (int i2) {
+
+#if !defined(OMP_FINE_SYNC)
+      Real_t hgfx[8], hgfy[8], hgfz[8] ;
+#endif
+
+      Real_t coefficient;
+
+      Real_t hourgam[8][4];
+      Real_t xd1[8], yd1[8], zd1[8] ;
+
+      // Define this here so code works on both host and device
+      const Real_t gamma[4][8] =
+      {
+        { Real_t( 1.), Real_t( 1.), Real_t(-1.), Real_t(-1.),
+          Real_t(-1.), Real_t(-1.), Real_t( 1.), Real_t( 1.) },
+
+        { Real_t( 1.), Real_t(-1.), Real_t(-1.), Real_t( 1.),
+          Real_t(-1.), Real_t( 1.), Real_t( 1.), Real_t(-1.) },
+
+        { Real_t( 1.), Real_t(-1.), Real_t( 1.), Real_t(-1.),
+          Real_t( 1.), Real_t(-1.), Real_t( 1.), Real_t(-1.) },
+
+        { Real_t(-1.), Real_t( 1.), Real_t(-1.), Real_t( 1.),
+          Real_t( 1.), Real_t(-1.), Real_t( 1.), Real_t(-1.) }
+      } ;
+
+      const Index_t *elemToNode = domain->nodelist(i2);
+      Index_t i3=8*i2;
+      Real_t volinv=Real_t(1.0)/determ[i2];
+      Real_t ss1, mass1, volume13 ;
+      for(Index_t i1=0;i1<4;++i1){
+
+         Real_t hourmodx =
+            x8n[i3] * gamma[i1][0] + x8n[i3+1] * gamma[i1][1] +
+            x8n[i3+2] * gamma[i1][2] + x8n[i3+3] * gamma[i1][3] +
+            x8n[i3+4] * gamma[i1][4] + x8n[i3+5] * gamma[i1][5] +
+            x8n[i3+6] * gamma[i1][6] + x8n[i3+7] * gamma[i1][7];
+
+         Real_t hourmody =
+            y8n[i3] * gamma[i1][0] + y8n[i3+1] * gamma[i1][1] +
+            y8n[i3+2] * gamma[i1][2] + y8n[i3+3] * gamma[i1][3] +
+            y8n[i3+4] * gamma[i1][4] + y8n[i3+5] * gamma[i1][5] +
+            y8n[i3+6] * gamma[i1][6] + y8n[i3+7] * gamma[i1][7];
+
+         Real_t hourmodz =
+            z8n[i3] * gamma[i1][0] + z8n[i3+1] * gamma[i1][1] +
+            z8n[i3+2] * gamma[i1][2] + z8n[i3+3] * gamma[i1][3] +
+            z8n[i3+4] * gamma[i1][4] + z8n[i3+5] * gamma[i1][5] +
+            z8n[i3+6] * gamma[i1][6] + z8n[i3+7] * gamma[i1][7];
+
+         hourgam[0][i1] = gamma[i1][0] -  volinv*(dvdx[i3  ] * hourmodx +
+                                                  dvdy[i3  ] * hourmody +
+                                                  dvdz[i3  ] * hourmodz );
+
+         hourgam[1][i1] = gamma[i1][1] -  volinv*(dvdx[i3+1] * hourmodx +
+                                                  dvdy[i3+1] * hourmody +
+                                                  dvdz[i3+1] * hourmodz );
+
+         hourgam[2][i1] = gamma[i1][2] -  volinv*(dvdx[i3+2] * hourmodx +
+                                                  dvdy[i3+2] * hourmody +
+                                                  dvdz[i3+2] * hourmodz );
+
+         hourgam[3][i1] = gamma[i1][3] -  volinv*(dvdx[i3+3] * hourmodx +
+                                                  dvdy[i3+3] * hourmody +
+                                                  dvdz[i3+3] * hourmodz );
+
+         hourgam[4][i1] = gamma[i1][4] -  volinv*(dvdx[i3+4] * hourmodx +
+                                                  dvdy[i3+4] * hourmody +
+                                                  dvdz[i3+4] * hourmodz );
+
+         hourgam[5][i1] = gamma[i1][5] -  volinv*(dvdx[i3+5] * hourmodx +
+                                                  dvdy[i3+5] * hourmody +
+                                                  dvdz[i3+5] * hourmodz );
+
+         hourgam[6][i1] = gamma[i1][6] -  volinv*(dvdx[i3+6] * hourmodx +
+                                                  dvdy[i3+6] * hourmody +
+                                                  dvdz[i3+6] * hourmodz );
+
+         hourgam[7][i1] = gamma[i1][7] -  volinv*(dvdx[i3+7] * hourmodx +
+                                                  dvdy[i3+7] * hourmody +
+                                                  dvdz[i3+7] * hourmodz );
+
+      }
+
+      /* compute forces */
+      /* store forces into h arrays (force arrays) */
+
+      ss1=domain->ss(i2);
+      mass1=domain->elemMass(i2);
+      volume13=CBRT(determ[i2]);
+
+      Index_t n0si2 = elemToNode[0];
+      Index_t n1si2 = elemToNode[1];
+      Index_t n2si2 = elemToNode[2];
+      Index_t n3si2 = elemToNode[3];
+      Index_t n4si2 = elemToNode[4];
+      Index_t n5si2 = elemToNode[5];
+      Index_t n6si2 = elemToNode[6];
+      Index_t n7si2 = elemToNode[7];
+
+      xd1[0] = domain->xd(n0si2);
+      xd1[1] = domain->xd(n1si2);
+      xd1[2] = domain->xd(n2si2);
+      xd1[3] = domain->xd(n3si2);
+      xd1[4] = domain->xd(n4si2);
+      xd1[5] = domain->xd(n5si2);
+      xd1[6] = domain->xd(n6si2);
+      xd1[7] = domain->xd(n7si2);
+
+      yd1[0] = domain->yd(n0si2);
+      yd1[1] = domain->yd(n1si2);
+      yd1[2] = domain->yd(n2si2);
+      yd1[3] = domain->yd(n3si2);
+      yd1[4] = domain->yd(n4si2);
+      yd1[5] = domain->yd(n5si2);
+      yd1[6] = domain->yd(n6si2);
+      yd1[7] = domain->yd(n7si2);
+
+      zd1[0] = domain->zd(n0si2);
+      zd1[1] = domain->zd(n1si2);
+      zd1[2] = domain->zd(n2si2);
+      zd1[3] = domain->zd(n3si2);
+      zd1[4] = domain->zd(n4si2);
+      zd1[5] = domain->zd(n5si2);
+      zd1[6] = domain->zd(n6si2);
+      zd1[7] = domain->zd(n7si2);
+
+      coefficient = - hourg * Real_t(0.01) * ss1 * mass1 / volume13;
+
+      CalcElemFBHourglassForce(xd1,yd1,zd1, hourgam, coefficient,
+#if !defined(OMP_FINE_SYNC)
+                               hgfx, hgfy, hgfz
+#else
+                               &fx_elem[i3], &fy_elem[i3], &fz_elem[i3]
+#endif
+                              );
+
+#if !defined(OMP_FINE_SYNC)
+      domain->fx(n0si2) += hgfx[0];
+      domain->fy(n0si2) += hgfy[0];
+      domain->fz(n0si2) += hgfz[0];
+
+      domain->fx(n1si2) += hgfx[1];
+      domain->fy(n1si2) += hgfy[1];
+      domain->fz(n1si2) += hgfz[1];
+
+      domain->fx(n2si2) += hgfx[2];
+      domain->fy(n2si2) += hgfy[2];
+      domain->fz(n2si2) += hgfz[2];
+
+      domain->fx(n3si2) += hgfx[3];
+      domain->fy(n3si2) += hgfy[3];
+      domain->fz(n3si2) += hgfz[3];
+
+      domain->fx(n4si2) += hgfx[4];
+      domain->fy(n4si2) += hgfy[4];
+      domain->fz(n4si2) += hgfz[4];
+
+      domain->fx(n5si2) += hgfx[5];
+      domain->fy(n5si2) += hgfy[5];
+      domain->fz(n5si2) += hgfz[5];
+
+      domain->fx(n6si2) += hgfx[6];
+      domain->fy(n6si2) += hgfy[6];
+      domain->fz(n6si2) += hgfz[6];
+
+      domain->fx(n7si2) += hgfx[7];
+      domain->fy(n7si2) += hgfy[7];
+      domain->fz(n7si2) += hgfz[7];
+#endif
+   } );
+
+#if defined(OMP_FINE_SYNC)
+   // Collect the data from the local arrays into the final force arrays
+   RAJA::forall<node_exec_policy>(domain->getNodeISet(),
+                                  [=] LULESH_DEVICE (int gnode) {
+      Index_t count = domain->nodeElemCount(gnode) ;
+      Index_t *cornerList = domain->nodeElemCornerList(gnode) ;
+      Real_t fx_sum = Real_t(0.0) ;
+      Real_t fy_sum = Real_t(0.0) ;
+      Real_t fz_sum = Real_t(0.0) ;
+      for (Index_t i=0 ; i < count ; ++i) {
+         Index_t ielem = cornerList[i] ;
+         fx_sum += fx_elem[ielem] ;
+         fy_sum += fy_elem[ielem] ;
+         fz_sum += fz_elem[ielem] ;
+      }
+      domain->fx(gnode) += fx_sum ;
+      domain->fy(gnode) += fy_sum ;
+      domain->fz(gnode) += fz_sum ;
+   } );
+
+   elemMemPool.release(&fz_elem) ;
+   elemMemPool.release(&fy_elem) ;
+   elemMemPool.release(&fx_elem) ;
+#endif
 }
 
 /******************************************/
@@ -722,13 +939,80 @@ RAJA_STORAGE
 void CalcHourglassControlForElems(Domain* domain,
                                   Real_t determ[], Real_t hgcoef)
 {
+   Index_t numElem = domain->numElem() ;
+   Index_t numElem8 = numElem * 8 ;
+   Real_t *dvdx = elemMemPool.allocate(numElem8) ;
+   Real_t *dvdy = elemMemPool.allocate(numElem8) ;
+   Real_t *dvdz = elemMemPool.allocate(numElem8) ;
+   Real_t *x8n  = elemMemPool.allocate(numElem8) ;
+   Real_t *y8n  = elemMemPool.allocate(numElem8) ;
+   Real_t *z8n  = elemMemPool.allocate(numElem8) ;
 
+   // For negative element volume check
+   RAJA::ReduceMin<reduce_policy, Real_t> minvol(Real_t(1.0e+20));
+
+   /* start loop over elements */
    RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-      [=] LULESH_DEVICE (int i2) {} );
+        [=] LULESH_DEVICE (int i) {
+#if 1
+      /* This variant makes overall runtime 2% faster on CPU */
+      Real_t  x1[8],  y1[8],  z1[8] ;
+      Real_t pfx[8], pfy[8], pfz[8] ;
 
-   RAJA::forall<node_exec_policy>(domain->getNodeISet(),
-                                  [=] LULESH_DEVICE (int gnode) {
+      Index_t* elemToNode = domain->nodelist(i);
+      CollectDomainNodesToElemNodes(domain, elemToNode, x1, y1, z1);
+
+      CalcElemVolumeDerivative(pfx, pfy, pfz, x1, y1, z1);
+
+      /* load into temporary storage for FB Hour Glass control */
+      for(Index_t ii=0;ii<8;++ii) {
+         Index_t jj=8*i+ii;
+
+         dvdx[jj] = pfx[ii];
+         dvdy[jj] = pfy[ii];
+         dvdz[jj] = pfz[ii];
+         x8n[jj]  = x1[ii];
+         y8n[jj]  = y1[ii];
+         z8n[jj]  = z1[ii];
+      }
+#else
+      /* This variant is likely GPU friendly */
+      Index_t* elemToNode = domain->nodelist(i);
+      CollectDomainNodesToElemNodes(domain, elemToNode,
+                                    &x8n[8*i], &y8n[8*i], &z8n[8*i]);
+
+      CalcElemVolumeDerivative(&dvdx[8*i], &dvdy[8*i], &dvdz[8*i],
+                               &x8n[8*i], &y8n[8*i], &z8n[8*i]);
+#endif
+
+      determ[i] = domain->volo(i) * domain->v(i);
+
+      minvol.min(domain->v(i));
+
    } );
+
+   /* Do a check for negative volumes */
+   if ( Real_t(minvol) <= Real_t(0.0) ) {
+#if USE_MPI         
+      MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
+#else
+      exit(VolumeError);
+#endif
+   }
+
+   if ( hgcoef > Real_t(0.) ) {
+      CalcFBHourglassForceForElems( domain,
+                                    determ, x8n, y8n, z8n, dvdx, dvdy, dvdz,
+                                    hgcoef, numElem ) ;
+   }
+
+   elemMemPool.release(&z8n) ;
+   elemMemPool.release(&y8n) ;
+   elemMemPool.release(&x8n) ;
+   elemMemPool.release(&dvdz) ;
+   elemMemPool.release(&dvdy) ;
+   elemMemPool.release(&dvdx) ;
+
    return ;
 }
 
@@ -738,6 +1022,7 @@ RAJA_STORAGE
 void CalcVolumeForceForElems(Domain* domain)
 {
    Index_t numElem = domain->numElem() ;
+   if (numElem != 0) {
       Real_t  hgcoef = domain->hgcoef() ;
       Real_t *sigxx  = elemMemPool.allocate(numElem) ;
       Real_t *sigyy  = elemMemPool.allocate(numElem) ;
@@ -745,14 +1030,13 @@ void CalcVolumeForceForElems(Domain* domain)
       Real_t *determ = elemMemPool.allocate(numElem) ;
 
       /* Sum contributions to total stress tensor */
-      //InitStressTermsForElems(domain, sigxx, sigyy, sigzz);
+      InitStressTermsForElems(domain, sigxx, sigyy, sigzz);
 
       // call elemlib stress integration loop to produce nodal forces from
       // material stresses.
-      //IntegrateStressForElems( domain,
-      //                         sigxx, sigyy, sigzz, determ, numElem );
+      IntegrateStressForElems( domain,
+                               sigxx, sigyy, sigzz, determ, numElem );
 
-      /*
       // check for negative element volume
       RAJA::ReduceMin<reduce_policy, Real_t> minvol(Real_t(1.0e+20));
       RAJA::forall<elem_exec_policy>(domain->getElemISet(),
@@ -767,7 +1051,6 @@ void CalcVolumeForceForElems(Domain* domain)
          exit(VolumeError);
 #endif
       }
-      */
 
       CalcHourglassControlForElems(domain, determ, hgcoef) ;
 
@@ -775,33 +1058,29 @@ void CalcVolumeForceForElems(Domain* domain)
       elemMemPool.release(&sigzz) ;
       elemMemPool.release(&sigyy) ;
       elemMemPool.release(&sigxx) ;
+   }
 }
 
 /******************************************/
 
 RAJA_STORAGE void CalcForceForNodes(Domain* domain)
 {
-#if 0
 #if USE_MPI  
   CommRecv(*domain, MSG_COMM_SBN, 3,
            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
            true, false) ;
 #endif  
-#endif
 
-  /*
   RAJA::forall<node_exec_policy>(domain->getNodeISet(),
        [=] LULESH_DEVICE (int i) {
      domain->fx(i) = Real_t(0.0) ;
      domain->fy(i) = Real_t(0.0) ;
      domain->fz(i) = Real_t(0.0) ;
   } );
-  */
 
   /* Calcforce calls partial, force, hourq */
   CalcVolumeForceForElems(domain) ;
 
-#if 0
 #if USE_MPI  
   Domain_member fieldData[3] ;
   fieldData[0] = &Domain::fx ;
@@ -812,8 +1091,7 @@ RAJA_STORAGE void CalcForceForNodes(Domain* domain)
            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() +  1,
            true, false) ;
   CommSBN(*domain, 3, fieldData) ;
-#endif 
-#endif 
+#endif  
 }
 
 /******************************************/
@@ -897,14 +1175,13 @@ void LagrangeNodal(Domain* domain)
    Domain_member fieldData[6] ;
 #endif
 
-   //const Real_t delt = domain->deltatime() ;
-   //Real_t u_cut = domain->u_cut() ;
+   const Real_t delt = domain->deltatime() ;
+   Real_t u_cut = domain->u_cut() ;
 
   /* time of boundary condition evaluation is beginning of step for force and
    * acceleration boundary conditions. */
   CalcForceForNodes(domain);
 
-#if 0
 #if USE_MPI  
 #if defined(SEDOV_SYNC_POS_VEL_EARLY)
    CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
@@ -935,7 +1212,7 @@ void LagrangeNodal(Domain* domain)
    CommSyncPosVel(*domain) ;
 #endif
 #endif
-#endif 
+   
   return;
 }
 
@@ -2186,7 +2463,6 @@ void LagrangeLeapFrog(Domain* domain)
     * applied boundary conditions and slide surface considerations */
    LagrangeNodal(domain);
 
-#if 0
 
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
 #endif
@@ -2220,14 +2496,11 @@ void LagrangeLeapFrog(Domain* domain)
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
    CommSyncPosVel(*domain) ;
 #endif
-#endif
-
-#endif
+#endif   
 }
 
 
 /******************************************/
-
 void __enzyme_autodiff(void*, void*, void*);
 int main(int argc, char *argv[])
 {
@@ -2324,11 +2597,8 @@ int main(int argc, char *argv[])
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
       TimeIncrement(*locDom) ;
-#ifdef GRADIENT
-      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom);
-#else
       LagrangeLeapFrog(locDom) ;
-#endif
+      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
          printf("cycle = %d, time = %e, dt=%e\n",
@@ -2367,7 +2637,6 @@ double elapsed_time;
    }
 
    delete locDom;
-   delete grad_locDom;
 
 #if USE_MPI
    MPI_Finalize() ;
