@@ -2361,17 +2361,14 @@ void LagrangeLeapFrog(Domain* domain)
     
     LULESH_ISET& regISet = domain->getRegionISet(0);
     
-    auto loop_body = [=] LULESH_DEVICE (Index_t ielem) {
+    RAJA_EXTRACT_BED_IT(*regISet.data[0]);
+
+  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+    auto ielem = (*(begin_it + i));
+      
       p[ielem] *= 2;
       //p_new[ielem] ;
       q[ielem] = p_new[ielem] ;
-   };
-
-
-             RAJA_EXTRACT_BED_IT(*regISet.data[0]);
-
-  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
-    loop_body(*(begin_it + i));
   }
 
 
