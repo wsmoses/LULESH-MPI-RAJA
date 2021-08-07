@@ -2361,7 +2361,13 @@ void LagrangeLeapFrog(Domain* domain)
     
     LULESH_ISET& regISet = domain->getRegionISet(0);
     
-    RAJA_EXTRACT_BED_IT(*regISet.data[0]);
+     auto& CONTAINER = *regISet.data[0];
+       using std::begin;                                  
+  using std::end;                                    
+  using std::distance;                               
+  auto begin_it = begin(CONTAINER);             
+  auto end_it = end(CONTAINER);                 
+  auto distance_it = distance(begin_it, end_it);
 
   for (decltype(distance_it) i = 0; i < distance_it; ++i) {
     auto ielem = (*(begin_it + i));
