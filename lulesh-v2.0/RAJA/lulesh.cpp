@@ -2165,8 +2165,8 @@ void EvalEOSForElems(Domain* domain,
    Real_t emin    = domain->emin() ;
    Real_t rho0    = domain->refdens() ;
 
+   LULESH_ISET& regISet = domain->getRegionISet(reg_num);
  
-#if 0
    //loop to add load imbalance based on region number 
    for(Int_t j = 0; j < rep; j++) {
       /* compress data, minimal set */
@@ -2212,15 +2212,19 @@ void EvalEOSForElems(Domain* domain,
                          rho0, eosvmax,
                          regISet);
    }
-#endif
 
+   RAJA::forall<mat_exec_policy>(regISet,
+        [=] LULESH_DEVICE (Index_t ielem) {
+      domain->p(ielem) = p_new[ielem] ;
+      domain->e(ielem) = e_new[ielem] ;
+      domain->q(ielem) = q_new[ielem] ;
+   } );
 
-   /*
    CalcSoundSpeedForElems(domain,
                           vnewc, rho0, e_new, p_new,
                           pbvc, bvc, ss4o3,
                           regISet) ;
-*/
+
 }
 
 /******************************************/
@@ -2228,6 +2232,105 @@ void EvalEOSForElems(Domain* domain,
 RAJA_STORAGE
 void ApplyMaterialPropertiesForElems(Domain* domain)
 {
+   Index_t numElem = domain->numElem() ;
+
+  if (numElem != 0) {
+    /* Expose all of the variables needed for material evaluation */
+    Real_t eosvmin = domain->eosvmin() ;
+    Real_t eosvmax = domain->eosvmax() ;
+    Real_t *vnewc = elemMemPool.allocate(numElem) ;
+    Real_t *p_old = elemMemPool.allocate(numElem) ;
+    Real_t *compression = elemMemPool.allocate(numElem) ;
+    Real_t *compHalfStep = elemMemPool.allocate(numElem) ;
+    Real_t *work = elemMemPool.allocate(numElem) ;
+    Real_t *p_new = elemMemPool.allocate(numElem) ;
+    Real_t *e_new = elemMemPool.allocate(numElem) ;
+    Real_t *q_new = elemMemPool.allocate(numElem) ;
+    Real_t *bvc = elemMemPool.allocate(numElem) ;
+    Real_t *pbvc = elemMemPool.allocate(numElem) ;
+    Real_t *pHalfStep = elemMemPool.allocate(numElem) ;
+
+
+    RAJA::forall<elem_exec_policy>(domain->getElemISet(),
+         [=] LULESH_DEVICE (int i) {
+       vnewc[i] = domain->vnew(i) ;
+    } );
+
+    // Bound the updated relative volumes with eosvmin/max
+    if (eosvmin != Real_t(0.)) {
+       RAJA::forall<elem_exec_policy>(domain->getElemISet(), 
+            [=] LULESH_DEVICE (int i) {
+          if (vnewc[i] < eosvmin)
+             vnewc[i] = eosvmin ;
+       } );
+    }
+
+    if (eosvmax != Real_t(0.)) {
+       RAJA::forall<elem_exec_policy>(domain->getElemISet(),
+            [=] LULESH_DEVICE (int i) {
+          if (vnewc[i] > eosvmax)
+             vnewc[i] = eosvmax ;
+       } );
+    }
+
+    // check for negative element volume
+    RAJA::ReduceMin<reduce_policy, Real_t> minvol(Real_t(1.0e+20));
+
+    // This check may not make perfect sense in LULESH, but
+    // it's representative of something in the full code -
+    // just leave it in, please
+    RAJA::forall<elem_exec_policy>(domain->getElemISet(),
+         [=] LULESH_DEVICE (int i) {
+       Real_t vc = domain->v(i) ;
+       if (eosvmin != Real_t(0.)) {
+          if (vc < eosvmin)
+             vc = -1.0 ;
+       }
+       if (eosvmax != Real_t(0.)) {
+          if (vc > eosvmax)
+             vc = -1.0 ;
+       }
+
+       minvol.min(vc);
+    } );
+
+    if (Real_t(minvol) <= 0.) {
+#if USE_MPI             
+       MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
+#else
+       exit(VolumeError);
+#endif
+    }
+
+    for (Int_t reg_num=0 ; reg_num < domain->numReg() ; reg_num++) {
+       Int_t rep;
+       //Determine load imbalance for this region
+       //round down the number with lowest cost
+       if(reg_num < domain->numReg()/2)
+	 rep = 1;
+       //you don't get an expensive region unless you at least have 5 regions
+       else if(reg_num < (domain->numReg() - (domain->numReg()+15)/20))
+         rep = 1 + domain->cost();
+       //very expensive regions
+       else
+	 rep = 10 * (1+ domain->cost());
+       EvalEOSForElems(domain, vnewc, p_old, compression, compHalfStep,
+                       work, p_new, e_new, q_new, bvc, pbvc, pHalfStep,
+                       reg_num, rep);
+    }
+
+    elemMemPool.release(&pHalfStep) ;
+    elemMemPool.release(&pbvc) ;
+    elemMemPool.release(&bvc) ;
+    elemMemPool.release(&q_new) ;
+    elemMemPool.release(&e_new) ;
+    elemMemPool.release(&p_new) ;
+    elemMemPool.release(&work) ;
+    elemMemPool.release(&compHalfStep) ;
+    elemMemPool.release(&compression) ;
+    elemMemPool.release(&p_old) ;
+    elemMemPool.release(&vnewc) ;
+  }
 }
 
 /******************************************/
@@ -2252,15 +2355,15 @@ void UpdateVolumesForElems(Domain* domain,
 RAJA_STORAGE
 void LagrangeElements(Domain* domain, Index_t RAJA_UNUSED_ARG(numElem))
 {
-  //CalcLagrangeElements(domain) ;
+  CalcLagrangeElements(domain) ;
 
   /* Calculate Q.  (Monotonic q option requires communication) */
-  //CalcQForElems(domain) ;
+  CalcQForElems(domain) ;
 
   ApplyMaterialPropertiesForElems(domain) ;
 
-  //UpdateVolumesForElems(domain,
-  //                      domain->v_cut()) ;
+  UpdateVolumesForElems(domain,
+                        domain->v_cut()) ;
 }
 
 /******************************************/
@@ -2348,36 +2451,52 @@ void CalcTimeConstraintsForElems(Domain* domain) {
 }
 
 /******************************************/
-using namespace RAJA;
 
 RAJA_STORAGE
 void LagrangeLeapFrog(Domain* domain)
 {
-   Index_t numElem = domain->numElem() ;
+#if defined(SEDOV_SYNC_POS_VEL_LATE)
+   Domain_member fieldData[6] ;
+#endif
 
-    Real_t *p_new = elemMemPool.allocate(numElem) ;
-    Real_t* p = &domain->p(0);
-    Real_t* q = &domain->q(0);
-    
-    LULESH_ISET& regISet = domain->getRegionISet(0);
-    
-     auto& CONTAINER = *regISet.data[0];
-       using std::begin;                                  
-  using std::end;                                    
-  using std::distance;                               
-  auto begin_it = begin(CONTAINER);             
-  auto end_it = end(CONTAINER);                 
-  auto distance_it = distance(begin_it, end_it);
-
-  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
-    auto ielem = (*(begin_it + i));
-      
-      p[ielem] *= 2;
-      q[ielem] = p_new[ielem] ;
-  }
+   /* calculate nodal forces, accelerations, velocities, positions, with
+    * applied boundary conditions and slide surface considerations */
+   LagrangeNodal(domain);
 
 
-    elemMemPool.release(&p_new) ;
+#if defined(SEDOV_SYNC_POS_VEL_LATE)
+#endif
+
+   /* calculate element quantities (i.e. velocity gradient & q), and update
+    * material states */
+   LagrangeElements(domain, domain->numElem());
+
+#if USE_MPI   
+#if defined(SEDOV_SYNC_POS_VEL_LATE)
+   CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
+            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
+            false, false) ; 
+
+   fieldData[0] = &Domain::x ;
+   fieldData[1] = &Domain::y ;
+   fieldData[2] = &Domain::z ;
+   fieldData[3] = &Domain::xd ;
+   fieldData[4] = &Domain::yd ;
+   fieldData[5] = &Domain::zd ;
+   
+   CommSend(*domain, MSG_SYNC_POS_VEL, 6, fieldData,
+            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
+            false, false) ;
+#endif
+#endif   
+
+   CalcTimeConstraintsForElems(domain);
+
+#if USE_MPI   
+#if defined(SEDOV_SYNC_POS_VEL_LATE)
+   CommSyncPosVel(*domain) ;
+#endif
+#endif   
 }
 
 
@@ -2478,11 +2597,8 @@ int main(int argc, char *argv[])
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
       TimeIncrement(*locDom) ;
-#ifdef GRADIENT
-      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
-#else
       LagrangeLeapFrog(locDom) ;
-#endif
+      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
          printf("cycle = %d, time = %e, dt=%e\n",

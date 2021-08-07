@@ -143,6 +143,9 @@ public:
    }
 
    bool release(VARTYPE **oldPtr) {
+      Release(oldPtr);
+      return true;
+
       int i ;
       bool success = true ;
       for (i=0; i<32; ++i) {
@@ -158,21 +161,6 @@ public:
       return success ;
    }
 
-   bool release(VARTYPE * __restrict__ *oldPtr) {
-      int i ;
-      bool success = true ;
-      for (i=0; i<32; ++i) {
-         if (ptr[i] == *oldPtr) {
-            lenType[i] = -lenType[i] ;
-            *oldPtr = 0 ;
-            break ;
-         }
-      }
-      if (i == 32) {
-         success = false ; /* error -- not found */
-      }
-      return success ; 
-   }
 
    VARTYPE *ptr[32] ; 
    int lenType[32] ;
