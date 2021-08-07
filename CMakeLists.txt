@@ -16,7 +16,7 @@ set(CMAKE_C_COMPILER   "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang" CACHE
 set(CMAKE_CXX_COMPILER "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang++" CACHE PATH "")
 set(CMAKE_LINKER       "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang++" CACHE PATH "")
 set (ENABLE_OPENMP ON)
-set(CMAKE_CXX_FLAGS " -I /mnt/sabrent/wmoses/llvm13/buildallfast/projects/openmp/runtime/src -I /usr/lib/x86_64-linux-gnu/openmpi/include -flegacy-pass-manager -Xclang -load -Xclang /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so -fno-vectorize -fno-unroll-loops -fopenmp -lmpi -O3 -ffast-math -mllvm -enzyme-loose-types" CACHE STRING "")
+set(CMAKE_CXX_FLAGS " -I /mnt/sabrent/wmoses/llvm13/buildallfast/projects/openmp/runtime/src -I /usr/lib/x86_64-linux-gnu/openmpi/include -flegacy-pass-manager -Xclang -load -Xclang /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so -fno-vectorize -fno-unroll-loops -fopenmp -lmpi -O3 -ffast-math -mllvm -enzyme-loose-types -mllvm -enzyme-print" CACHE STRING "")
 
 set(BLT_CXX_STD "c++11")
 project(RajaProxies LANGUAGES CXX)

@@ -2373,7 +2373,6 @@ void LagrangeLeapFrog(Domain* domain)
     auto ielem = (*(begin_it + i));
       
       p[ielem] *= 2;
-      //p_new[ielem] ;
       q[ielem] = p_new[ielem] ;
   }
 

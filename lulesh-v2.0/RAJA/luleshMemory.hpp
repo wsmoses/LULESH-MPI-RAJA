@@ -109,6 +109,7 @@ public:
    }
 
    VARTYPE *allocate(int len) {
+      return Allocate<VARTYPE>(len) ;
       VARTYPE *retVal = nullptr;
       int i ;
       for (i=0; i<32; ++i) {
@@ -131,7 +132,6 @@ public:
          }
          else if (lenType[i] == 0) {
             lenType[i] = -len ;
-            ptr[i] = Allocate<VARTYPE>(len) ;
             retVal = ptr[i] ;
             break ;
          }
