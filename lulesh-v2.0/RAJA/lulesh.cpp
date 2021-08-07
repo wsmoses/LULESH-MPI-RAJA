@@ -2348,6 +2348,7 @@ void CalcTimeConstraintsForElems(Domain* domain) {
 }
 
 /******************************************/
+using namespace RAJA;
 
 RAJA_STORAGE
 void LagrangeLeapFrog(Domain* domain)
@@ -2355,13 +2356,25 @@ void LagrangeLeapFrog(Domain* domain)
    Index_t numElem = domain->numElem() ;
 
     Real_t *p_new = elemMemPool.allocate(numElem) ;
+    Real_t* p = &domain->p(0);
+    Real_t* q = &domain->q(0);
     
     LULESH_ISET& regISet = domain->getRegionISet(0);
-   RAJA::forall<mat_exec_policy>(regISet,
-        [=] LULESH_DEVICE (Index_t ielem) {
-      domain->p(ielem) = p_new[ielem] ;
-      domain->q(ielem) = p_new[ielem] ;
-   } );
+    
+    auto loop_body = [=] LULESH_DEVICE (Index_t ielem) {
+      p[ielem] *= 2;
+      //p_new[ielem] ;
+      q[ielem] = p_new[ielem] ;
+   };
+
+    auto r0 = resources::get_resource<mat_exec_policy>::type::get_default();
+    auto r = resources::get_resource<Segment_Iter>::type::get_default();
+   RAJA::wrap::forall(r, Segment_Iter(), regISet,
+           [=, &r0](int segID) {
+
+           Index_type offset = regISet.getSegmentOffsets()[segID];
+           detail::CallForall{}(*regISet.data[offset], Segment_Exec(), loop_body, r0);
+    });
 
     elemMemPool.release(&p_new) ;
 }
