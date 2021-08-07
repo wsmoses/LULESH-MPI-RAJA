@@ -2367,11 +2367,11 @@ void LagrangeLeapFrog(Domain* domain)
       q[ielem] = p_new[ielem] ;
    };
 
-    auto r0 = resources::get_resource<mat_exec_policy>::type::get_default();
     auto r = resources::get_resource<Segment_Iter>::type::get_default();
-   RAJA::wrap::forall(r, Segment_Iter(), regISet,
-           [=, &r0](int segID) {
-
+    policy::sequential::forall_impl(r, Segment_Iter(), regISet,
+           [=](int segID) {
+    
+           auto r0 = resources::get_resource<mat_exec_policy>::type::get_default();
            Index_type offset = regISet.getSegmentOffsets()[segID];
            policy::sequential::forall_impl(r0, RAJA::policy::sequential::seq_exec(), *regISet.data[offset], loop_body);
     });
