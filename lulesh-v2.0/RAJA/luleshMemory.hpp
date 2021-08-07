@@ -56,7 +56,8 @@ template <typename T>
 inline T *Allocate(size_t size)
 {
    T *retVal = nullptr;
-   posix_memalign((void **)&retVal, RAJA::DATA_ALIGN, sizeof(T)*size);
+   //posix_memalign((void **)&retVal, RAJA::DATA_ALIGN, sizeof(T)*size);
+   retVal = (T*)malloc(sizeof(T)*size);
 // memset(retVal,0,sizeof(T)*size);
    return retVal ;
 }
@@ -78,19 +79,13 @@ inline T *AllocateTouch(LULESH_ISET *is, size_t size)
 template <typename T>
 inline void Release(T **ptr)
 {
-   if (*ptr != NULL) {
       free(*ptr) ;
-      *ptr = NULL ;
-   }
 }
 
 template <typename T>
 inline void Release(T * __restrict__ *ptr)
 {
-   if (*ptr != NULL) {
       free(*ptr) ;
-      *ptr = NULL ;
-   }
 }
 
 #endif 
