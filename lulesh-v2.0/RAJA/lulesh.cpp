@@ -2368,13 +2368,13 @@ void LagrangeLeapFrog(Domain* domain)
    };
 
     auto r = resources::get_resource<Segment_Iter>::type::get_default();
-    policy::sequential::forall_impl(r, Segment_Iter(), regISet,
-           [=](int segID) {
+    //policy::sequential::forall_impl(r, Segment_Iter(), regISet,
+    //       [=](int segID) {
     
            auto r0 = resources::get_resource<mat_exec_policy>::type::get_default();
-           Index_type offset = regISet.getSegmentOffsets()[segID];
-           policy::sequential::forall_impl(r0, RAJA::policy::sequential::seq_exec(), *regISet.data[offset], loop_body);
-    });
+           //Index_type offset = regISet.getSegmentOffsets()[segID];
+           policy::sequential::forall_impl(r0, RAJA::policy::sequential::seq_exec(), *regISet.data[0], loop_body);
+    //});
 
     elemMemPool.release(&p_new) ;
 }
