@@ -2373,7 +2373,7 @@ void LagrangeLeapFrog(Domain* domain)
            [=, &r0](int segID) {
 
            Index_type offset = regISet.getSegmentOffsets()[segID];
-           detail::CallForall{}(*regISet.data[offset], Segment_Exec(), loop_body, r0);
+           policy::sequential::forall_impl(r0, RAJA::policy::sequential::seq_exec(), *regISet.data[offset], loop_body);
     });
 
     elemMemPool.release(&p_new) ;
