@@ -2597,8 +2597,11 @@ int main(int argc, char *argv[])
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
       TimeIncrement(*locDom) ;
-      LagrangeLeapFrog(locDom) ;
+#ifdef GRADIENT
       __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
+#else
+      LagrangeLeapFrog(locDom) ;
+#endif
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
          printf("cycle = %d, time = %e, dt=%e\n",
@@ -2637,6 +2640,7 @@ double elapsed_time;
    }
 
    delete locDom;
+   delete grad_locDom;
 
 #if USE_MPI
    MPI_Finalize() ;
