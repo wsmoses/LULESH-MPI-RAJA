@@ -1532,7 +1532,6 @@ void CalcLagrangeElements(Domain* domain)
 
       CalcKinematicsForElems(domain, deltatime, numElem) ;
 
-#if 0
       // check for negative element volume
       RAJA::ReduceMin<reduce_policy, Real_t> minvol(Real_t(1.0e+20));
 
@@ -1559,7 +1558,6 @@ void CalcLagrangeElements(Domain* domain)
          exit(VolumeError);
 #endif
       }
-#endif
 
       domain->DeallocateStrains(elemMemPool);
    }
@@ -2360,14 +2358,12 @@ void LagrangeElements(Domain* domain, Index_t RAJA_UNUSED_ARG(numElem))
   CalcLagrangeElements(domain) ;
 
   /* Calculate Q.  (Monotonic q option requires communication) */
-  /*
   CalcQForElems(domain) ;
 
   ApplyMaterialPropertiesForElems(domain) ;
 
   UpdateVolumesForElems(domain,
                         domain->v_cut()) ;
-  */
 }
 
 /******************************************/
@@ -2465,7 +2461,7 @@ void LagrangeLeapFrog(Domain* domain)
 
    /* calculate nodal forces, accelerations, velocities, positions, with
     * applied boundary conditions and slide surface considerations */
-   //LagrangeNodal(domain);
+   LagrangeNodal(domain);
 
 
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
@@ -2474,8 +2470,6 @@ void LagrangeLeapFrog(Domain* domain)
    /* calculate element quantities (i.e. velocity gradient & q), and update
     * material states */
    LagrangeElements(domain, domain->numElem());
-
-#if 0
 
 #if USE_MPI   
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
@@ -2503,8 +2497,6 @@ void LagrangeLeapFrog(Domain* domain)
    CommSyncPosVel(*domain) ;
 #endif
 #endif   
-
-#endif
 }
 
 

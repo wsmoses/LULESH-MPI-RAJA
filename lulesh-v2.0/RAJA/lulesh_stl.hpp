@@ -222,12 +222,18 @@ class Domain {
    {
       (void) pool ;
       m_delx_zeta.clear() ;
+      m_delx_zeta.shrink_to_fit();
       m_delx_eta.clear() ;
+      m_delx_eta.shrink_to_fit();
       m_delx_xi.clear() ;
+      m_delx_xi.shrink_to_fit();
 
       m_delv_zeta.clear() ;
+      m_delv_zeta.shrink_to_fit();
       m_delv_eta.clear() ;
+      m_delv_eta.shrink_to_fit();
       m_delv_xi.clear() ;
+      m_delv_xi.shrink_to_fit();
    }
 
    void AllocateStrains(lulesh2::MemoryPool< Real_t > &pool,
@@ -245,8 +251,11 @@ class Domain {
       (void) pool ;
 
       m_dzz.clear() ;
+      m_dzz.shrink_to_fit();
       m_dyy.clear() ;
+      m_dyy.shrink_to_fit();
       m_dxx.clear() ;
+      m_dxx.shrink_to_fit();
    }
 
    //

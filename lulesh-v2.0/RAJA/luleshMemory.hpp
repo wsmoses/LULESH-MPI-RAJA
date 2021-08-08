@@ -79,13 +79,19 @@ inline T *AllocateTouch(LULESH_ISET *is, size_t size)
 template <typename T>
 inline void Release(T **ptr)
 {
+    if (*ptr != 0) {
       free(*ptr) ;
+      *ptr =  0;
+    }
 }
 
 template <typename T>
 inline void Release(T * __restrict__ *ptr)
 {
+    if (*ptr != 0) {
       free(*ptr) ;
+      *ptr =  0;
+    }
 }
 
 #endif 
