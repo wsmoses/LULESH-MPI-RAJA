@@ -109,6 +109,30 @@ if (ENABLE_OPENMP)
     PUBLIC
     -DLULESH_DEVICE= 
   )
+  target_compile_options(
+    lulesh-v2.0-RAJA-omp-grad.exe
+    PRIVATE -mllvm -enzyme-omp-opt=0
+    ${lulesh_compile_options})
+  
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-ompOpt.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt.exe
+    PRIVATE 
+    -DUSE_MPI=0)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+  target_compile_options(
+    lulesh-v2.0-RAJA-ompOpt-grad.exe
+    PRIVATE -mllvm -enzyme-omp-opt=1
+    ${lulesh_compile_options})
 endif ()
 
 if (ENABLE_OPENMP)
@@ -132,6 +156,35 @@ if (ENABLE_OPENMP)
     PUBLIC
     -DGRADIENT=1 
   )
+  target_compile_options(
+    lulesh-v2.0-RAJA-omp-gradient.exe
+    PRIVATE -mllvm -enzyme-omp-opt=0
+    ${lulesh_compile_options})
+  
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-ompOpt-gradient.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-gradient.exe
+    PRIVATE 
+    -DUSE_MPI=0)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-gradient.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-gradient.exe
+    PUBLIC
+    -DGRADIENT=1 
+  )
+  target_compile_options(
+    lulesh-v2.0-RAJA-ompOpt-gradient.exe
+    PRIVATE -mllvm -enzyme-omp-opt=1
+    ${lulesh_compile_options})
 endif ()
 
 
@@ -145,7 +198,7 @@ blt_add_executable(
 
 target_compile_options(
   lulesh-v2.0-RAJA-seq-mpi.exe
-  PRIVATE
+  PRIVATE -mllvm -enzyme-omp-opt=0
   ${lulesh_compile_options})
 
 target_compile_definitions(
@@ -171,7 +224,7 @@ blt_add_executable(
 
 target_compile_options(
   lulesh-v2.0-RAJA-seq-mpi-grad.exe
-  PRIVATE
+  PRIVATE -mllvm -enzyme-omp-opt=0
   ${lulesh_compile_options})
 
 target_compile_definitions(
@@ -211,6 +264,31 @@ if (ENABLE_OPENMP)
     PUBLIC
     -DLULESH_DEVICE= 
   )
+  target_compile_options(
+  lulesh-v2.0-RAJA-omp-mpi.exe
+  PRIVATE -mllvm -enzyme-omp-opt=0
+  ${lulesh_compile_options})
+  
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-ompOpt-mpi.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-mpi.exe
+    PRIVATE 
+    -DUSE_MPI=1)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-mpi.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+  target_compile_options(
+  lulesh-v2.0-RAJA-ompOpt-mpi.exe
+  PRIVATE -mllvm -enzyme-omp-opt=1
+  ${lulesh_compile_options})
+
 endif ()
 
 if (ENABLE_OPENMP)
@@ -234,6 +312,35 @@ if (ENABLE_OPENMP)
     PUBLIC
     -DGRADIENT=1 
   )
+  target_compile_options(
+  lulesh-v2.0-RAJA-omp-mpi-gradient.exe
+  PRIVATE -mllvm -enzyme-omp-opt=0
+  ${lulesh_compile_options})
+  
+  blt_add_executable(
+    NAME lulesh-v2.0-RAJA-ompOpt-mpi-gradient.exe
+    SOURCES ${lulesh_sources}
+    DEPENDS_ON ${lulesh_depends})
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-mpi-gradient.exe
+    PRIVATE 
+    -DUSE_MPI=1)
+
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-mpi-gradient.exe
+    PUBLIC
+    -DLULESH_DEVICE= 
+  )
+  target_compile_definitions(
+    lulesh-v2.0-RAJA-ompOpt-mpi-gradient.exe
+    PUBLIC
+    -DGRADIENT=1 
+  )
+  target_compile_options(
+  lulesh-v2.0-RAJA-ompOpt-mpi-gradient.exe
+  PRIVATE -mllvm -enzyme-ompOpt-opt=1
+  ${lulesh_compile_options})
 endif ()
 
 

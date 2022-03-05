@@ -12,16 +12,20 @@
 
 cmake_minimum_required(VERSION 3.4)
 
-set(CMAKE_C_COMPILER   "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang" CACHE PATH "")
-set(CMAKE_CXX_COMPILER "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang++" CACHE PATH "")
-set(CMAKE_LINKER       "/mnt/sabrent/wmoses/llvm13/buildallfast/bin/clang++" CACHE PATH "")
+set(LLVM_BUILD "/home/ubuntu/llvm_enzyme_support/build")
+set(ENZYME "/home/ubuntu/Enzyme1/enzyme/build/Enzyme/ClangEnzyme-14.so")
+#set(LLVM_BUILD "/home/ubuntu/llvm-project/build")
+#set(ENZYME "/home/ubuntu/Enzyme/enzyme/build/Enzyme/ClangEnzyme-14.so")
+set(CMAKE_C_COMPILER   "${LLVM_BUILD}/bin/clang" CACHE PATH "")
+set(CMAKE_CXX_COMPILER "${LLVM_BUILD}/bin/clang++" CACHE PATH "")
+set(CMAKE_LINKER       "${LLVM_BUILD}/bin/clang++" CACHE PATH "")
 set (ENABLE_OPENMP ON)
-set(CMAKE_CXX_FLAGS " -I /mnt/sabrent/wmoses/llvm13/buildallfast/projects/openmp/runtime/src -I /usr/lib/x86_64-linux-gnu/openmpi/include -flegacy-pass-manager -Xclang -load -Xclang /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so -fno-vectorize -fno-unroll-loops -fopenmp -lmpi -O3 -ffast-math -mllvm -enzyme-loose-types -mllvm -enzyme-print -DLULESH_LIST_INDEXSET" CACHE STRING "")
+set(CMAKE_CXX_FLAGS " -I ${LLVM_BUILD}/projects/openmp/runtime/src -I /usr/lib/x86_64-linux-gnu/openmpi/include -flegacy-pass-manager -Xclang -load -Xclang ${ENZYME} -fopenmp -lmpi -O3 -ffast-math -mllvm -enzyme-loose-types -DLULESH_LIST_INDEXSET" CACHE STRING "")
 
 set(BLT_CXX_STD "c++11")
 project(RajaProxies LANGUAGES CXX)
 
-option(ENABLE_LULESH_ONE "Build LULESH v1.0" On)
+option(ENABLE_LULESH_ONE "Build LULESH v1.0" OFF)
 option(ENABLE_LULESH_TWO "Build LULESH v2.0" On)
 
 set (ENABLE_TESTS Off CACHE Bool "Don't build tests")
