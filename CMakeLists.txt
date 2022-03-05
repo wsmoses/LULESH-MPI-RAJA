@@ -12,8 +12,8 @@
 
 cmake_minimum_required(VERSION 3.4)
 
-set(LLVM_BUILD "/home/ubuntu/llvm_enzyme_support/build")
-set(ENZYME "/home/ubuntu/Enzyme1/enzyme/build/Enzyme/ClangEnzyme-14.so")
+set(LLVM_BUILD "/home/ubuntu/omp-llvm/build")
+set(ENZYME "/home/ubuntu/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-15.so")
 #set(LLVM_BUILD "/home/ubuntu/llvm-project/build")
 #set(ENZYME "/home/ubuntu/Enzyme/enzyme/build/Enzyme/ClangEnzyme-14.so")
 set(CMAKE_C_COMPILER   "${LLVM_BUILD}/bin/clang" CACHE PATH "")
