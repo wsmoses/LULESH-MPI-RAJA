@@ -110,7 +110,7 @@ if (ENABLE_OPENMP)
     -DLULESH_DEVICE= 
   )
   target_compile_options(
-    lulesh-v2.0-RAJA-omp-grad.exe
+    lulesh-v2.0-RAJA-omp.exe
     PRIVATE -mllvm -enzyme-omp-opt=0
     ${lulesh_compile_options})
   
@@ -130,7 +130,7 @@ if (ENABLE_OPENMP)
     -DLULESH_DEVICE= 
   )
   target_compile_options(
-    lulesh-v2.0-RAJA-ompOpt-grad.exe
+    lulesh-v2.0-RAJA-ompOpt.exe
     PRIVATE -mllvm -enzyme-omp-opt=1
     ${lulesh_compile_options})
 endif ()
