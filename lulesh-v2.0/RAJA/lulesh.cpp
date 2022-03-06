@@ -508,80 +508,7 @@ void IntegrateStressForElems( Domain* domain,
                               Real_t *sigxx, Real_t *sigyy, Real_t *sigzz,
                               Real_t *determ, Index_t numElem)
 {
-  RAJA_UNUSED_VAR(numElem);
-#if defined(OMP_FINE_SYNC)
-  Real_t *fx_elem = elemMemPool.allocate(numElem*8) ;
-  Real_t *fy_elem = elemMemPool.allocate(numElem*8) ;
-  Real_t *fz_elem = elemMemPool.allocate(numElem*8) ;
-#endif
 
-  // loop over all elements
-  RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-     [=] LULESH_DEVICE (int k) {
-    const Index_t* const elemToNode = domain->nodelist(k);
-    Real_t B[3][8] __attribute__((aligned(32))) ;// shape function derivatives
-    Real_t x_local[8] __attribute__((aligned(32))) ;
-    Real_t y_local[8] __attribute__((aligned(32))) ;
-    Real_t z_local[8] __attribute__((aligned(32))) ;
-#if !defined(OMP_FINE_SYNC)
-    Real_t fx_local[8] __attribute__((aligned(32))) ;
-    Real_t fy_local[8] __attribute__((aligned(32))) ;
-    Real_t fz_local[8] __attribute__((aligned(32))) ;
-#endif
-
-    // get nodal coordinates from global arrays and copy into local arrays.
-    CollectDomainNodesToElemNodes(domain, elemToNode,
-                                  x_local, y_local, z_local);
-
-    // Volume calculation involves extra work for numerical consistency
-    CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
-                                         B, &determ[k]);
-
-    CalcElemNodeNormals( B[0] , B[1], B[2],
-                          x_local, y_local, z_local );
-
-    SumElemStressesToNodeForces( B, sigxx[k], sigyy[k], sigzz[k],
-#if !defined(OMP_FINE_SYNC)
-                                 fx_local, fy_local, fz_local
-#else
-                                 &fx_elem[k*8], &fy_elem[k*8], &fz_elem[k*8]
-#endif
-                       ) ;
-
-#if !defined(OMP_FINE_SYNC)
-    // copy nodal force contributions to global force arrray.
-    for( Index_t lnode=0 ; lnode<8 ; ++lnode ) {
-       Index_t gnode = elemToNode[lnode];
-       domain->fx(gnode) += fx_local[lnode];
-       domain->fy(gnode) += fy_local[lnode];
-       domain->fz(gnode) += fz_local[lnode];
-    }
-#endif
-  } );
-
-#if defined(OMP_FINE_SYNC)
-  RAJA::forall<node_exec_policy>(domain->getNodeISet(),
-                                 [=] LULESH_DEVICE (int gnode) {
-     Index_t count = domain->nodeElemCount(gnode) ;
-     Index_t *cornerList = domain->nodeElemCornerList(gnode) ;
-     Real_t fx_sum = Real_t(0.0) ;
-     Real_t fy_sum = Real_t(0.0) ;
-     Real_t fz_sum = Real_t(0.0) ;
-     for (Index_t i=0 ; i < count ; ++i) {
-        Index_t ielem = cornerList[i] ;
-        fx_sum += fx_elem[ielem] ;
-        fy_sum += fy_elem[ielem] ;
-        fz_sum += fz_elem[ielem] ;
-     }
-     domain->fx(gnode) = fx_sum ;
-     domain->fy(gnode) = fy_sum ;
-     domain->fz(gnode) = fz_sum ;
-  } );
-
-  elemMemPool.release(&fz_elem) ;
-  elemMemPool.release(&fy_elem) ;
-  elemMemPool.release(&fx_elem) ;
-#endif
 }
 
 /******************************************/
@@ -1034,8 +961,23 @@ void CalcVolumeForceForElems(Domain* domain)
 
       // call elemlib stress integration loop to produce nodal forces from
       // material stresses.
-      IntegrateStressForElems( domain,
-                               sigxx, sigyy, sigzz, determ, numElem );
+  // loop over all elements
+  RAJA::forall<elem_exec_policy>(domain->getElemISet(),
+     [=] LULESH_DEVICE (int k) {
+    const Index_t* const elemToNode = domain->nodelist(k);
+    Real_t B[3][8] __attribute__((aligned(32))) ;// shape function derivatives
+    Real_t x_local[8] __attribute__((aligned(32))) ;
+    Real_t y_local[8] __attribute__((aligned(32))) ;
+    Real_t z_local[8] __attribute__((aligned(32))) ;
+
+    // get nodal coordinates from global arrays and copy into local arrays.
+    CollectDomainNodesToElemNodes(domain, elemToNode,
+                                  x_local, y_local, z_local);
+
+    // Volume calculation involves extra work for numerical consistency
+    CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
+                                         B, &determ[k]);
+  } );
 
       // check for negative element volume
       Real_t minvol(Real_t(1.0e+20));
