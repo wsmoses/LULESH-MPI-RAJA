@@ -2195,18 +2195,9 @@ void CalcHydroConstraintForElems(Domain* domain, int reg_num,
 
 RAJA_STORAGE
 void CalcTimeConstraintsForElems(Domain* domain) {
-
-   // Initialize conditions to a very large value
-   domain->dtcourant() = 1.0e+20;
-   domain->dthydro() = 1.0e+20;
-
-   for (Index_t reg_num=0 ; reg_num < domain->numReg() ; ++reg_num) {
-      /* evaluate time constraint */
-      CalcCourantConstraintForElems(domain, reg_num,
+    CalcCourantConstraintForElems(domain, 0,
                                     domain->qqc(),
                                     domain->dtcourant()) ;
-
-   }
 }
 
 /******************************************/
