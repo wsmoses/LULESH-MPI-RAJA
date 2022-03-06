@@ -949,19 +949,8 @@ RAJA_STORAGE
 void CalcVolumeForceForElems(Domain* domain)
 {
    Index_t numElem = domain->numElem() ;
-//   if (numElem != 0) {
-      Real_t  hgcoef = domain->hgcoef() ;
-      Real_t *sigxx  = elemMemPool.allocate(numElem) ;
-      Real_t *sigyy  = elemMemPool.allocate(numElem) ;
-      Real_t *sigzz  = elemMemPool.allocate(numElem) ;
       Real_t *determ = elemMemPool.allocate(numElem) ;
 
-      /* Sum contributions to total stress tensor */
-      InitStressTermsForElems(domain, sigxx, sigyy, sigzz);
-
-      // call elemlib stress integration loop to produce nodal forces from
-      // material stresses.
-  // loop over all elements
   RAJA::forall<elem_exec_policy>(domain->getElemISet(),
      [=] LULESH_DEVICE (int k) {
     const Index_t* const elemToNode = domain->nodelist(k);
@@ -978,27 +967,13 @@ void CalcVolumeForceForElems(Domain* domain)
     CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
                                          B, &determ[k]);
   } );
-
-      // check for negative element volume
-      Real_t minvol(Real_t(1.0e+20));
       for (size_t i=0; i<numElem; i++)
-	      minvol = std::min(minvol, determ[i]);
-
-      if (Real_t(minvol) <= Real_t(0.0)) {
-#if USE_MPI            
+	  if (determ[i] < 0.0) 
+	  {
+		  printf("f=%f i=%d\n", determ[i], i);
          MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
-#else
-         exit(VolumeError);
-#endif
       }
-
-      //CalcHourglassControlForElems(domain, determ, hgcoef) ;
-
       elemMemPool.release(&determ) ;
-      elemMemPool.release(&sigzz) ;
-      elemMemPool.release(&sigyy) ;
-      elemMemPool.release(&sigxx) ;
-  // }
 }
 
 /******************************************/
