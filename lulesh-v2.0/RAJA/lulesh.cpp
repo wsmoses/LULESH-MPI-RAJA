@@ -949,7 +949,6 @@ RAJA_STORAGE
 void CalcVolumeForceForElems(Domain* domain)
 {
    Index_t numElem = domain->numElem() ;
-      Real_t *determ = elemMemPool.allocate(numElem) ;
 
   RAJA::forall<elem_exec_policy>(domain->getElemISet(),
      [=] LULESH_DEVICE (int k) {
@@ -963,17 +962,16 @@ void CalcVolumeForceForElems(Domain* domain)
     CollectDomainNodesToElemNodes(domain, elemToNode,
                                   x_local, y_local, z_local);
 
+    Real_t determ;
     // Volume calculation involves extra work for numerical consistency
     CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
-                                         B, &determ[k]);
-  } );
-      for (size_t i=0; i<numElem; i++)
-	  if (determ[i] < 0.0) 
+                                         B, &determ);
+	  if (determ < 0.0) 
 	  {
-		  printf("f=%f i=%d\n", determ[i], i);
+		  printf("f=%f i=%d\n", determ, k);
          MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
       }
-      elemMemPool.release(&determ) ;
+  } );
 }
 
 /******************************************/
