@@ -2469,7 +2469,7 @@ void LagrangeLeapFrog(Domain* domain)
 
    /* calculate element quantities (i.e. velocity gradient & q), and update
     * material states */
-   LagrangeElements(domain, domain->numElem());
+   //LagrangeElements(domain, domain->numElem());
 
 #if USE_MPI   
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
