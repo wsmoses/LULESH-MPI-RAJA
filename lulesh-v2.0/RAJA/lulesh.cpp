@@ -1022,7 +1022,7 @@ RAJA_STORAGE
 void CalcVolumeForceForElems(Domain* domain)
 {
    Index_t numElem = domain->numElem() ;
-   if (numElem != 0) {
+//   if (numElem != 0) {
       Real_t  hgcoef = domain->hgcoef() ;
       Real_t *sigxx  = elemMemPool.allocate(numElem) ;
       Real_t *sigyy  = elemMemPool.allocate(numElem) ;
@@ -1052,13 +1052,13 @@ void CalcVolumeForceForElems(Domain* domain)
 #endif
       }
 
-      CalcHourglassControlForElems(domain, determ, hgcoef) ;
+      //CalcHourglassControlForElems(domain, determ, hgcoef) ;
 
       elemMemPool.release(&determ) ;
       elemMemPool.release(&sigzz) ;
       elemMemPool.release(&sigyy) ;
       elemMemPool.release(&sigxx) ;
-   }
+  // }
 }
 
 /******************************************/
@@ -1175,8 +1175,8 @@ void LagrangeNodal(Domain* domain)
    Domain_member fieldData[6] ;
 #endif
 
-   const Real_t delt = domain->deltatime() ;
-   Real_t u_cut = domain->u_cut() ;
+   //const Real_t delt = domain->deltatime() ;
+   //Real_t u_cut = domain->u_cut() ;
 
   /* time of boundary condition evaluation is beginning of step for force and
    * acceleration boundary conditions. */
