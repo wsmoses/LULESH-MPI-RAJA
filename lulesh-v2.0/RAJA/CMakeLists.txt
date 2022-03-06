@@ -339,7 +339,7 @@ if (ENABLE_OPENMP)
   )
   target_compile_options(
   lulesh-v2.0-RAJA-ompOpt-mpi-gradient.exe
-  PRIVATE -mllvm -enzyme-ompOpt-opt=1
+  PRIVATE -mllvm -enzyme-omp-opt=1
   ${lulesh_compile_options})
 endif ()
 
