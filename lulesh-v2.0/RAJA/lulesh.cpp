@@ -1192,11 +1192,11 @@ void LagrangeNodal(Domain* domain)
    
    CalcAccelerationForNodes(domain);
    
-   ApplyAccelerationBoundaryConditionsForNodes(domain);
+   //ApplyAccelerationBoundaryConditionsForNodes(domain);
 
-   CalcVelocityForNodes( domain, delt, u_cut) ;
+   //CalcVelocityForNodes( domain, delt, u_cut) ;
 
-   CalcPositionForNodes( domain, delt );
+   //CalcPositionForNodes( domain, delt );
 #if USE_MPI
 #if defined(SEDOV_SYNC_POS_VEL_EARLY)
   fieldData[0] = &Domain::x ;
