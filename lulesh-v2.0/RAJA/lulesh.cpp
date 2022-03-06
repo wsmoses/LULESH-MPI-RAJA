@@ -855,18 +855,6 @@ RAJA_STORAGE void CalcForceForNodes(Domain* domain)
 #endif
   /* Calcforce calls partial, force, hourq */
 
-    int k = 9;
-    const Index_t* const elemToNode = domain->nodelist(k);
-   Index_t nd6i = elemToNode[6] ;
-    Real_t determ;
-  determ = domain->x(nd6i);
-		  printf(" 1=%f %d\n", determ, nd6i);
-				 
-	  if ( determ < 1e-6)
-	  {
-		  printf("f=%f i=%d\n", determ, k);
-         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
-      }
 #if 0
 #if USE_MPI  
   Domain_member fieldData[3] ;
@@ -968,7 +956,18 @@ void LagrangeNodal(Domain* domain)
 
   /* time of boundary condition evaluation is beginning of step for force and
    * acceleration boundary conditions. */
-  CalcForceForNodes(domain);
+    int k = 9;
+    const Index_t* const elemToNode = domain->nodelist(k);
+   Index_t nd6i = elemToNode[6] ;
+    Real_t determ;
+  determ = domain->x(nd6i);
+		  printf(" 1=%f %d\n", determ, nd6i);
+				 
+	  if ( determ < 1e-6)
+	  {
+		  printf("f=%f i=%d\n", determ, k);
+         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
+      }
 
 #if USE_MPI  
 #if defined(SEDOV_SYNC_POS_VEL_EARLY)
@@ -978,7 +977,7 @@ void LagrangeNodal(Domain* domain)
 #endif
 #endif
    
-   CalcAccelerationForNodes(domain);
+   //CalcAccelerationForNodes(domain);
    
    //ApplyAccelerationBoundaryConditionsForNodes(domain);
 
