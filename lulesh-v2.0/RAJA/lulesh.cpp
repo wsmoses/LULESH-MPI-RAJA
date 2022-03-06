@@ -947,15 +947,7 @@ void CalcPositionForNodes(Domain* domain, const Real_t dt)
 RAJA_STORAGE
 void LagrangeNodal(Domain* domain)
 {
-#if defined(SEDOV_SYNC_POS_VEL_EARLY)
    Domain_member fieldData[6] ;
-#endif
-
-   //const Real_t delt = domain->deltatime() ;
-   //Real_t u_cut = domain->u_cut() ;
-
-  /* time of boundary condition evaluation is beginning of step for force and
-   * acceleration boundary conditions. */
     int k = 9;
     const Index_t* const elemToNode = domain->nodelist(k);
    Index_t nd6i = elemToNode[6] ;
@@ -968,24 +960,10 @@ void LagrangeNodal(Domain* domain)
 		  printf("f=%f i=%d\n", determ, k);
          MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
       }
-
-#if USE_MPI  
-#if defined(SEDOV_SYNC_POS_VEL_EARLY)
+	  {
    CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
             domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
             false, false) ;
-#endif
-#endif
-   
-   //CalcAccelerationForNodes(domain);
-   
-   //ApplyAccelerationBoundaryConditionsForNodes(domain);
-
-   //CalcVelocityForNodes( domain, delt, u_cut) ;
-
-   //CalcPositionForNodes( domain, delt );
-#if USE_MPI
-#if defined(SEDOV_SYNC_POS_VEL_EARLY)
   fieldData[0] = &Domain::x ;
   fieldData[1] = &Domain::y ;
   fieldData[2] = &Domain::z ;
@@ -997,9 +975,7 @@ void LagrangeNodal(Domain* domain)
             domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
             false, false) ;
    CommSyncPosVel(*domain) ;
-#endif
-#endif
-   
+}   
   return;
 }
 
