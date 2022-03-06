@@ -950,8 +950,7 @@ void CalcVolumeForceForElems(Domain* domain)
 {
    Index_t numElem = domain->numElem() ;
 
-  RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-     [=] LULESH_DEVICE (int k) {
+    int k = 9;
     const Index_t* const elemToNode = domain->nodelist(k);
     Real_t B[3][8] __attribute__((aligned(32))) ;// shape function derivatives
     Real_t x_local[8] __attribute__((aligned(32))) ;
@@ -971,7 +970,6 @@ void CalcVolumeForceForElems(Domain* domain)
 		  printf("f=%f i=%d\n", determ, k);
          MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
       }
-  } );
 }
 
 /******************************************/
