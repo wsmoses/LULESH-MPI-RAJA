@@ -833,111 +833,13 @@ void CalcHourglassControlForElems(Domain* domain,
 RAJA_STORAGE
 void CalcVolumeForceForElems(Domain* domain)
 {
-   Index_t numElem = domain->numElem() ;
-
-    int k = 9;
-    const Index_t* const elemToNode = domain->nodelist(k);
-    Real_t B[3][8] __attribute__((aligned(32))) ;// shape function derivatives
-    Real_t elemX[8] __attribute__((aligned(32))) ;
-    Real_t elemY[8] __attribute__((aligned(32))) ;
-    Real_t elemZ[8] __attribute__((aligned(32))) ;
-
-    // get nodal coordinates from global arrays and copy into local arrays.
-  //  CollectDomainNodesToElemNodes(domain, elemToNode,
-   //                               x_local, y_local, z_local);
-   Index_t nd0i = elemToNode[0] ;
-   Index_t nd1i = elemToNode[1] ;
-   Index_t nd2i = elemToNode[2] ;
-   Index_t nd3i = elemToNode[3] ;
-   Index_t nd4i = elemToNode[4] ;
-   Index_t nd5i = elemToNode[5] ;
-   Index_t nd6i = elemToNode[6] ;
-   Index_t nd7i = elemToNode[7] ;
-
-   elemX[0] = domain->x(nd0i);
-   elemX[1] = domain->x(nd1i);
-   elemX[2] = domain->x(nd2i);
-   elemX[3] = domain->x(nd3i);
-   elemX[4] = domain->x(nd4i);
-   elemX[5] = domain->x(nd5i);
-   elemX[6] = domain->x(nd6i);
-   elemX[7] = domain->x(nd7i);
-
-   elemY[0] = domain->y(nd0i);
-   elemY[1] = domain->y(nd1i);
-   elemY[2] = domain->y(nd2i);
-   elemY[3] = domain->y(nd3i);
-   elemY[4] = domain->y(nd4i);
-   elemY[5] = domain->y(nd5i);
-   elemY[6] = domain->y(nd6i);
-   elemY[7] = domain->y(nd7i);
-
-   elemZ[0] = domain->z(nd0i);
-   elemZ[1] = domain->z(nd1i);
-   elemZ[2] = domain->z(nd2i);
-   elemZ[3] = domain->z(nd3i);
-   elemZ[4] = domain->z(nd4i);
-   elemZ[5] = domain->z(nd5i);
-   elemZ[6] = domain->z(nd6i);
-   elemZ[7] = domain->z(nd7i);
-
-    Real_t determ;
-    // Volume calculation involves extra work for numerical consistency
-  auto &x = elemX;
-  auto &y = elemY;
-  auto &z = elemZ;
-    const Real_t x0 = x[0] ;   const Real_t x1 = x[1] ;
-  const Real_t x2 = x[2] ;   const Real_t x3 = x[3] ;
-  const Real_t x4 = x[4] ;   const Real_t x5 = x[5] ;
-  const Real_t x6 = x[6] ;   const Real_t x7 = x[7] ;
-
-  const Real_t y0 = y[0] ;   const Real_t y1 = y[1] ;
-  const Real_t y2 = y[2] ;   const Real_t y3 = y[3] ;
-  const Real_t y4 = y[4] ;   const Real_t y5 = y[5] ;
-  const Real_t y6 = y[6] ;   const Real_t y7 = y[7] ;
-
-  const Real_t z0 = z[0] ;   const Real_t z1 = z[1] ;
-  const Real_t z2 = z[2] ;   const Real_t z3 = z[3] ;
-  const Real_t z4 = z[4] ;   const Real_t z5 = z[5] ;
-  const Real_t z6 = z[6] ;   const Real_t z7 = z[7] ;
-
-  Real_t fjxxi, fjxet, fjxze;
-  Real_t fjyxi, fjyet, fjyze;
-  Real_t fjzxi, fjzet, fjzze;
-  Real_t cjxxi, cjxet, cjxze;
-  Real_t cjyxi, cjyet, cjyze;
-  Real_t cjzxi, cjzet, cjzze;
-
-  fjxxi = Real_t(.125) * ( (x6-x0) + (x5-x3) - (x7-x1) - (x4-x2) );
-  fjxet = Real_t(.125) * ( (x6-x0) - (x5-x3) + (x7-x1) - (x4-x2) );
-  fjxze = Real_t(.125) * ( (x6-x0) + (x5-x3) + (x7-x1) + (x4-x2) );
-
-  fjyxi = Real_t(.125) * ( (y6-y0) + (y5-y3) - (y7-y1) - (y4-y2) );
-  fjyet = Real_t(.125) * ( (y6-y0) - (y5-y3) + (y7-y1) - (y4-y2) );
-  fjyze = Real_t(.125) * ( (y6-y0) + (y5-y3) + (y7-y1) + (y4-y2) );
-
-  fjzxi = Real_t(.125) * ( (z6-z0) + (z5-z3) - (z7-z1) - (z4-z2) );
-  fjzet = Real_t(.125) * ( (z6-z0) - (z5-z3) + (z7-z1) - (z4-z2) );
-  fjzze = Real_t(.125) * ( (z6-z0) + (z5-z3) + (z7-z1) + (z4-z2) );
-
-  /* compute cofactors */
-  cjyet =    (fjxxi * fjzze);
-
-  determ = cjyet ;
-		  printf(" 1=%f 2=%f\n", 
-				  fjxxi, fjzze);
-				 
-	  if (determ < 0.0) 
-	  {
-		  printf("f=%f i=%d\n", determ, k);
-         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
-      }
 }
 
 /******************************************/
 
 RAJA_STORAGE void CalcForceForNodes(Domain* domain)
 {
+#if 0
 #if USE_MPI  
   CommRecv(*domain, MSG_COMM_SBN, 3,
            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
@@ -950,10 +852,22 @@ RAJA_STORAGE void CalcForceForNodes(Domain* domain)
      domain->fy(i) = Real_t(0.0) ;
      domain->fz(i) = Real_t(0.0) ;
   } );
-
+#endif
   /* Calcforce calls partial, force, hourq */
-  CalcVolumeForceForElems(domain) ;
 
+    int k = 9;
+    const Index_t* const elemToNode = domain->nodelist(k);
+   Index_t nd6i = elemToNode[6] ;
+    Real_t determ;
+  determ = domain->x(nd6i);
+		  printf(" 1=%f %d\n", determ, nd6i);
+				 
+	  if ( determ < 1e-6)
+	  {
+		  printf("f=%f i=%d\n", determ, k);
+         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
+      }
+#if 0
 #if USE_MPI  
   Domain_member fieldData[3] ;
   fieldData[0] = &Domain::fx ;
@@ -964,6 +878,7 @@ RAJA_STORAGE void CalcForceForNodes(Domain* domain)
            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() +  1,
            true, false) ;
   CommSBN(*domain, 3, fieldData) ;
+#endif
 #endif  
 }
 
