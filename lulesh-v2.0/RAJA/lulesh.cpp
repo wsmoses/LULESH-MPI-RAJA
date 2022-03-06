@@ -2206,10 +2206,6 @@ void CalcTimeConstraintsForElems(Domain* domain) {
                                     domain->qqc(),
                                     domain->dtcourant()) ;
 
-      /* check hydro constraint */
-      CalcHydroConstraintForElems(domain, reg_num,
-                                  domain->dvovmax(),
-                                  domain->dthydro()) ;
    }
 }
 
