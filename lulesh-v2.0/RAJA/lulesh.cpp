@@ -933,9 +933,8 @@ void CalcVolumeForceForElems(Domain* domain)
   cjzet =  - (fjxxi * fjyze) + (fjyxi * fjxze);
   cjzze =    (fjxxi * fjyet) - (fjyxi * fjxet);
 
-  determ = fjxet * cjxet + fjyet * cjyet + fjzet * cjzet;
-		  printf(" 1=%f 2=%f 3=%f\n",
-  fjxet * cjxet , fjyet * cjyet , fjzet * cjzet);
+  determ = fjyet * cjyet ;
+		  printf(" 1=%f 2=%f\n", fjyet, cjyet);
 				 
 	  if (determ < 0.0) 
 	  {
