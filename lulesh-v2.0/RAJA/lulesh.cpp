@@ -239,41 +239,6 @@ void CollectDomainNodesToElemNodes(Domain* domain,
                                    Real_t elemY[8],
                                    Real_t elemZ[8])
 {
-   Index_t nd0i = elemToNode[0] ;
-   Index_t nd1i = elemToNode[1] ;
-   Index_t nd2i = elemToNode[2] ;
-   Index_t nd3i = elemToNode[3] ;
-   Index_t nd4i = elemToNode[4] ;
-   Index_t nd5i = elemToNode[5] ;
-   Index_t nd6i = elemToNode[6] ;
-   Index_t nd7i = elemToNode[7] ;
-
-   elemX[0] = domain->x(nd0i);
-   elemX[1] = domain->x(nd1i);
-   elemX[2] = domain->x(nd2i);
-   elemX[3] = domain->x(nd3i);
-   elemX[4] = domain->x(nd4i);
-   elemX[5] = domain->x(nd5i);
-   elemX[6] = domain->x(nd6i);
-   elemX[7] = domain->x(nd7i);
-
-   elemY[0] = domain->y(nd0i);
-   elemY[1] = domain->y(nd1i);
-   elemY[2] = domain->y(nd2i);
-   elemY[3] = domain->y(nd3i);
-   elemY[4] = domain->y(nd4i);
-   elemY[5] = domain->y(nd5i);
-   elemY[6] = domain->y(nd6i);
-   elemY[7] = domain->y(nd7i);
-
-   elemZ[0] = domain->z(nd0i);
-   elemZ[1] = domain->z(nd1i);
-   elemZ[2] = domain->z(nd2i);
-   elemZ[3] = domain->z(nd3i);
-   elemZ[4] = domain->z(nd4i);
-   elemZ[5] = domain->z(nd5i);
-   elemZ[6] = domain->z(nd6i);
-   elemZ[7] = domain->z(nd7i);
 
 }
 
@@ -953,17 +918,52 @@ void CalcVolumeForceForElems(Domain* domain)
     int k = 9;
     const Index_t* const elemToNode = domain->nodelist(k);
     Real_t B[3][8] __attribute__((aligned(32))) ;// shape function derivatives
-    Real_t x_local[8] __attribute__((aligned(32))) ;
-    Real_t y_local[8] __attribute__((aligned(32))) ;
-    Real_t z_local[8] __attribute__((aligned(32))) ;
+    Real_t elemX[8] __attribute__((aligned(32))) ;
+    Real_t elemY[8] __attribute__((aligned(32))) ;
+    Real_t elemZ[8] __attribute__((aligned(32))) ;
 
     // get nodal coordinates from global arrays and copy into local arrays.
-    CollectDomainNodesToElemNodes(domain, elemToNode,
-                                  x_local, y_local, z_local);
+  //  CollectDomainNodesToElemNodes(domain, elemToNode,
+   //                               x_local, y_local, z_local);
+   Index_t nd0i = elemToNode[0] ;
+   Index_t nd1i = elemToNode[1] ;
+   Index_t nd2i = elemToNode[2] ;
+   Index_t nd3i = elemToNode[3] ;
+   Index_t nd4i = elemToNode[4] ;
+   Index_t nd5i = elemToNode[5] ;
+   Index_t nd6i = elemToNode[6] ;
+   Index_t nd7i = elemToNode[7] ;
+
+   elemX[0] = domain->x(nd0i);
+   elemX[1] = domain->x(nd1i);
+   elemX[2] = domain->x(nd2i);
+   elemX[3] = domain->x(nd3i);
+   elemX[4] = domain->x(nd4i);
+   elemX[5] = domain->x(nd5i);
+   elemX[6] = domain->x(nd6i);
+   elemX[7] = domain->x(nd7i);
+
+   elemY[0] = domain->y(nd0i);
+   elemY[1] = domain->y(nd1i);
+   elemY[2] = domain->y(nd2i);
+   elemY[3] = domain->y(nd3i);
+   elemY[4] = domain->y(nd4i);
+   elemY[5] = domain->y(nd5i);
+   elemY[6] = domain->y(nd6i);
+   elemY[7] = domain->y(nd7i);
+
+   elemZ[0] = domain->z(nd0i);
+   elemZ[1] = domain->z(nd1i);
+   elemZ[2] = domain->z(nd2i);
+   elemZ[3] = domain->z(nd3i);
+   elemZ[4] = domain->z(nd4i);
+   elemZ[5] = domain->z(nd5i);
+   elemZ[6] = domain->z(nd6i);
+   elemZ[7] = domain->z(nd7i);
 
     Real_t determ;
     // Volume calculation involves extra work for numerical consistency
-    CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
+    CalcElemShapeFunctionDerivatives(elemX, elemY, elemZ,
                                          B, &determ);
 	  if (determ < 0.0) 
 	  {
