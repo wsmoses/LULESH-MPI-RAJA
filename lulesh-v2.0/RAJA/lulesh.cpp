@@ -921,20 +921,11 @@ void CalcVolumeForceForElems(Domain* domain)
   fjzze = Real_t(.125) * ( (z6-z0) + (z5-z3) + (z7-z1) + (z4-z2) );
 
   /* compute cofactors */
-  cjxxi =    (fjyet * fjzze) - (fjzet * fjyze);
-  cjxet =  - (fjyxi * fjzze) + (fjzxi * fjyze);
-  cjxze =    (fjyxi * fjzet) - (fjzxi * fjyet);
+  cjyet =    (fjxxi * fjzze);
 
-  cjyxi =  - (fjxet * fjzze) + (fjzet * fjxze);
-  cjyet =    (fjxxi * fjzze) - (fjzxi * fjxze);
-  cjyze =  - (fjxxi * fjzet) + (fjzxi * fjxet);
-
-  cjzxi =    (fjxet * fjyze) - (fjyet * fjxze);
-  cjzet =  - (fjxxi * fjyze) + (fjyxi * fjxze);
-  cjzze =    (fjxxi * fjyet) - (fjyxi * fjxet);
-
-  determ = fjyet * cjyet ;
-		  printf(" 1=%f 2=%f\n", fjyet, cjyet);
+  determ = cjyet ;
+		  printf(" 1=%f 2=%f\n", 
+				  fjxxi, fjzze);
 				 
 	  if (determ < 0.0) 
 	  {
