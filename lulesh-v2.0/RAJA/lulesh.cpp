@@ -1038,11 +1038,9 @@ void CalcVolumeForceForElems(Domain* domain)
                                sigxx, sigyy, sigzz, determ, numElem );
 
       // check for negative element volume
-      RAJA::ReduceMin<reduce_policy, Real_t> minvol(Real_t(1.0e+20));
-      RAJA::forall<elem_exec_policy>(domain->getElemISet(),
-           [=] LULESH_DEVICE (int k) {
-         minvol.min(determ[k]);
-      } );
+      Real_t minvol(Real_t(1.0e+20));
+      for (size_t i=0; i<numElem; i++)
+	      minvol = std::min(minvol, determ[i]);
 
       if (Real_t(minvol) <= Real_t(0.0)) {
 #if USE_MPI            
