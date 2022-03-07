@@ -110,7 +110,7 @@ void CommSend(Domain& domain, int msgType,
          Real_t *destAddr = &domain.commDataSend[0];
 #pragma unroll
 	 for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
+            Domain_member src = fieldData[0] ;
             auto dat = &(domain.*src)(0);
             for (Index_t i=0; i<dz; ++i) {
                for (Index_t j=0; j<dy; ++j) {
