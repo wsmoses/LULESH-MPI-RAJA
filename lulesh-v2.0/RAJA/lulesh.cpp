@@ -2159,14 +2159,36 @@ void LagrangeLeapFrog(Domain* domain)
    CommRecv(*domain, MSG_SYNC_POS_VEL, 4,
             dx, dy, dz,
 		   myRank) ;
+  int xferFields = 4;
   fieldData[0] = &Domain::x ;
   fieldData[1] = &Domain::xd ;
   fieldData[2] = &Domain::x ;
   fieldData[3] = &Domain::xd ;
 
-   CommSend(*domain, MSG_SYNC_POS_VEL, 4, fieldData,
-            dx, dy, dz,
-            myRank);
+  {
+   MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
+
+      /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
+      int sendCount = dy * dz ;
+
+      if (myRank == 1) {
+         Real_t *destAddr = &domain->commDataSend[0];
+            Domain_member src = fieldData[0] ;
+            auto dat = &(domain->*src)(0);
+	 for (Index_t fi=0; fi<xferFields; ++fi) {
+            for (Index_t i=0; i<dz; ++i) {
+               for (Index_t j=0; j<dy; ++j) {
+                  destAddr[i*dy + j] = dat[(i*dx*dy + j*dx)];
+               }
+            }
+            destAddr += sendCount ;
+         }
+
+         MPI_Send(&domain->commDataSend[0], xferFields*sendCount, baseType,
+                   myRank - 1, MSG_SYNC_POS_VEL,
+                   MPI_COMM_WORLD);
+      }
+  }
    CommSyncPosVel(*domain, dx, dy, dz, myRank) ;
     
    int k = 9;

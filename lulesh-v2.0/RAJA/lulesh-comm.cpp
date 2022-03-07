@@ -98,28 +98,6 @@ void CommSend(Domain& domain, int msgType,
               Index_t xferFields, Domain_member *fieldData,
               Index_t dx, Index_t dy, Index_t dz, int myRank)
 {
-   MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
-
-      /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
-      int sendCount = dy * dz ;
-
-      if (myRank == 1) {
-         Real_t *destAddr = &domain.commDataSend[0];
-            Domain_member src = fieldData[0] ;
-            auto dat = &(domain.*src)(0);
-	 for (Index_t fi=0; fi<xferFields; ++fi) {
-            for (Index_t i=0; i<dz; ++i) {
-               for (Index_t j=0; j<dy; ++j) {
-                  destAddr[i*dy + j] = dat[(i*dx*dy + j*dx)];
-               }
-            }
-            destAddr += sendCount ;
-         }
-
-         MPI_Send(&domain.commDataSend[0], xferFields*sendCount, baseType,
-                   myRank - 1, msgType,
-                   MPI_COMM_WORLD);
-      }
 }
 
 /******************************************/
