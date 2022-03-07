@@ -71,8 +71,8 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
    }
 
 
-   if (colMax) {
-      int fromRank = myRank + 1 ;
+   if (myRank == 0) {
+      int fromRank = 1 - myRank ;
       int recvCount = dy * dz * xferFields ;
       MPI_Irecv(&domain.commDataRecv[0],
                 recvCount, baseType, fromRank, msgType,
@@ -95,7 +95,7 @@ void CommSend(Domain& domain, int msgType,
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
       int sendCount = dy * dz ;
 
-      if (colMin) {
+      if (myRank == 1) {
          Real_t *destAddr = &domain.commDataSend[0];
          for (Index_t fi=0; fi<xferFields; ++fi) {
             Domain_member src = fieldData[fi] ;
@@ -538,10 +538,6 @@ void CommSyncPosVel(Domain& domain, int myRank) {
    Index_t dy = domain.sizeY() + 1 ;
    Index_t dz = domain.sizeZ() + 1 ;
    MPI_Status status ;
-	bool colMax = true;
-   if (domain.colLoc() == (domain.tp()-1)) {
-      colMax = false ;
-   }
 
    fieldData[0] = &Domain::x ;
    fieldData[1] = &Domain::y ;
@@ -552,7 +548,7 @@ void CommSyncPosVel(Domain& domain, int myRank) {
 
    Index_t opCount = dy * dz ;
 
-      if (colMax) {
+      if (myRank == 0) {
          Real_t *srcAddr = &domain.commDataRecv[0];
          MPI_Wait(&domain.recvRequest[0], &status) ;
          for (Index_t fi=0 ; fi<xferFields; ++fi) {
