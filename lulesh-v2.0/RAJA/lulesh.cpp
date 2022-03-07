@@ -2181,8 +2181,6 @@ void LagrangeLeapFrog(Domain* domain)
 		  printf("f=%f i=%d\n", determ, k);
          MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
       }
-
-   domain->dtcourant() = 0;
 }
 
 
