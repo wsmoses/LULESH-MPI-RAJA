@@ -56,7 +56,7 @@
 
 
 /* doRecv flag only works with regular block structure */
-void CommRecv(Domain& domain, int msgType, Index_t xferFields,
+void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
               Index_t dx, Index_t dy, Index_t dz, int myRank) {
 
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
@@ -70,6 +70,19 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
       domain.recvRequest[i] = MPI_REQUEST_NULL ;
    }
 
+   
+   Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */
+   Domain_member fieldData[6] ;
+   MPI_Status status ;
+
+   fieldData[0] = &Domain::x ;
+   fieldData[1] = &Domain::x ;
+   fieldData[2] = &Domain::x ;
+   fieldData[3] = &Domain::xd ;
+   fieldData[4] = &Domain::xd ;
+   fieldData[5] = &Domain::xd ;
+
+   Index_t opCount = dy * dz ;
 
    if (myRank == 0) {
       int fromRank = 1 - myRank ;
@@ -77,7 +90,18 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
       MPI_Irecv(&domain.commDataRecv[0],
                 recvCount, baseType, fromRank, msgType,
                 MPI_COMM_WORLD, &domain.recvRequest[0]) ;
-   }
+         Real_t *srcAddr = &domain.commDataRecv[0];
+         MPI_Wait(&domain.recvRequest[0], &status) ;
+         for (Index_t fi=0 ; fi<xferFields; ++fi) {
+            Domain_member dest = fieldData[fi] ;
+            for (Index_t i=0; i<dz; ++i) {
+               for (Index_t j=0; j<dy; ++j) {
+                  (domain.*dest)(dx - 1 + i*dx*dy + j*dx) = srcAddr[i*dy + j] ;
+               }
+            }
+            srcAddr += opCount ;
+         }
+      }
 }
 
 /******************************************/
@@ -532,32 +556,6 @@ void CommSBN(Domain& domain, int xferFields, Domain_member *fieldData) {
 /******************************************/
 
 void CommSyncPosVel(Domain& domain, Index_t dx, Index_t dy, Index_t dz, int myRank) {
-   Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */
-   Domain_member fieldData[6] ;
-   MPI_Status status ;
-
-   fieldData[0] = &Domain::x ;
-   fieldData[1] = &Domain::x ;
-   fieldData[2] = &Domain::x ;
-   fieldData[3] = &Domain::xd ;
-   fieldData[4] = &Domain::xd ;
-   fieldData[5] = &Domain::xd ;
-
-   Index_t opCount = dy * dz ;
-
-      if (myRank == 0) {
-         Real_t *srcAddr = &domain.commDataRecv[0];
-         MPI_Wait(&domain.recvRequest[0], &status) ;
-         for (Index_t fi=0 ; fi<xferFields; ++fi) {
-            Domain_member dest = fieldData[fi] ;
-            for (Index_t i=0; i<dz; ++i) {
-               for (Index_t j=0; j<dy; ++j) {
-                  (domain.*dest)(dx - 1 + i*dx*dy + j*dx) = srcAddr[i*dy + j] ;
-               }
-            }
-            srcAddr += opCount ;
-         }
-      }
 }
 
 /******************************************/
