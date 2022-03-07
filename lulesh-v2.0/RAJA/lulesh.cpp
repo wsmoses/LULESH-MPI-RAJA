@@ -975,8 +975,8 @@ void LagrangeNodal(Domain* domain)
 
    CommSend(*domain, MSG_SYNC_POS_VEL, 6, fieldData,
             domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
-            false, false) ;
-   CommSyncPosVel(*domain) ;
+            myRank);
+   CommSyncPosVel(*domain, myRank) ;
 }   
   return;
 }

@@ -84,16 +84,13 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
 
 void CommSend(Domain& domain, int msgType,
               Index_t xferFields, Domain_member *fieldData,
-              Index_t dx, Index_t dy, Index_t dz, bool doSend, bool planeOnly)
+              Index_t dx, Index_t dy, Index_t dz, int myRank)
 {
-
-   int myRank ;
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
    bool colMin = true;
    if (domain.colLoc() == 0) {
       colMin = false ;
    }
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
 
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
       int sendCount = dy * dz ;
@@ -534,8 +531,7 @@ void CommSBN(Domain& domain, int xferFields, Domain_member *fieldData) {
 
 /******************************************/
 
-void CommSyncPosVel(Domain& domain) {
-   int myRank ;
+void CommSyncPosVel(Domain& domain, int myRank) {
    Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */
    Domain_member fieldData[6] ;
    Index_t dx = domain.sizeX() + 1 ;
@@ -554,9 +550,7 @@ void CommSyncPosVel(Domain& domain) {
    fieldData[4] = &Domain::yd ;
    fieldData[5] = &Domain::zd ;
 
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
-
-      Index_t opCount = dy * dz ;
+   Index_t opCount = dy * dz ;
 
       if (colMax) {
          Real_t *srcAddr = &domain.commDataRecv[0];
