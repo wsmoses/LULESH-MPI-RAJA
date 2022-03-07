@@ -2135,6 +2135,7 @@ RAJA_STORAGE
 void CalcCourantConstraintForElems(Domain* domain, int reg_num,
                                    Real_t qqc, Real_t& dtcourant)
 {
+#if 0
    Real_t  qqc2 = Real_t(64.0) * qqc * qqc ;
 
    RAJA::ReduceMin<reduce_policy, Real_t> dtcourantLoc(dtcourant) ;
@@ -2155,12 +2156,9 @@ void CalcCourantConstraintForElems(Domain* domain, int reg_num,
       /* determine minimum timestep with its corresponding elem */
       dtcourantLoc.min(dtf_cmp) ;
    } ) ;
-
+#endif
    /* Don't try to register a time constraint if none of the elements
     * were active */
-   if (dtcourantLoc < Real_t(1.0e+20)) {
-      dtcourant = dtcourantLoc ;
-   }
 
    return ;
 }
@@ -2240,7 +2238,7 @@ void LagrangeLeapFrog(Domain* domain)
 #endif
 #endif   
 
-   CalcTimeConstraintsForElems(domain);
+   domain->dtcourant() = 0;
 
 #if USE_MPI   
 #if defined(SEDOV_SYNC_POS_VEL_LATE)
@@ -2344,8 +2342,9 @@ int main(int argc, char *argv[])
 //    RAJA::forall<mat_exec_policy>(locDom->getRegionISet(i), [=] (int idx) { printf("%d ", idx) ; }) ;
 //    printf("\n\n") ;
 // }
-   while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
+   for (int i=0; i<2; i++)
+   {
       TimeIncrement(*locDom) ;
 #ifdef GRADIENT
       __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
