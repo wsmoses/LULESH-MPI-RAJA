@@ -116,52 +116,24 @@ void CommSend(Domain& domain, int msgType,
               Index_t dx, Index_t dy, Index_t dz, bool doSend, bool planeOnly)
 {
 
-   if (domain.numRanks() == 1)
-      return ;
-
-   /* post recieve buffers for all incoming messages */
    int myRank ;
    Index_t maxPlaneComm = xferFields * domain.maxPlaneSize() ;
    Index_t maxEdgeComm  = xferFields * domain.maxEdgeSize() ;
-   Index_t pmsg = 0 ; /* plane comm msg */
-   Index_t emsg = 0 ; /* edge comm msg */
-   Index_t cmsg = 0 ; /* corner comm msg */
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
-   MPI_Status status[26] ;
    Real_t *destAddr ;
    bool rowMin, rowMax, colMin, colMax, planeMin, planeMax ;
    /* assume communication to 6 neighbors by default */
    rowMin = rowMax = colMin = colMax = planeMin = planeMax = true ;
-   if (domain.rowLoc() == 0) {
-      rowMin = false ;
-   }
-   if (domain.rowLoc() == (domain.tp()-1)) {
-      rowMax = false ;
-   }
    if (domain.colLoc() == 0) {
       colMin = false ;
    }
-   if (domain.colLoc() == (domain.tp()-1)) {
-      colMax = false ;
-   }
-   if (domain.planeLoc() == 0) {
-      planeMin = false ;
-   }
-   if (domain.planeLoc() == (domain.tp()-1)) {
-      planeMax = false ;
-   }
-
-   for (Index_t i=0; i<26; ++i) {
-      domain.sendRequest[i] = MPI_REQUEST_NULL ;
-   }
-
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
 
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
       int sendCount = dy * dz ;
 
       if (colMin) {
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm] ;
+         destAddr = &domain.commDataSend[0];
          for (Index_t fi=0; fi<xferFields; ++fi) {
             Domain_member src = fieldData[fi] ;
             for (Index_t i=0; i<dz; ++i) {
@@ -173,13 +145,10 @@ void CommSend(Domain& domain, int msgType,
          }
          destAddr -= xferFields*sendCount ;
 
-         MPI_Isend(destAddr, xferFields*sendCount, baseType,
+         MPI_Send(destAddr, xferFields*sendCount, baseType,
                    myRank - 1, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
-         ++pmsg ;
+                   MPI_COMM_WORLD);
       }
-
-   MPI_Waitall(26, domain.sendRequest, status) ;
 }
 
 /******************************************/
@@ -191,6 +160,8 @@ void CommSBN(Domain& domain, int xferFields, Domain_member *fieldData) {
 
    /* summation order should be from smallest value to largest */
    /* or we could try out kahan summation! */
+   MPI_Request req;
+         MPI_Isend(nullptr, 0, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD, &req);
 
    int myRank ;
    Index_t maxPlaneComm = xferFields * domain.maxPlaneSize() ;
