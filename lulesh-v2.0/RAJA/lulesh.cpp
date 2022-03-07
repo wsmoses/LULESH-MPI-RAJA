@@ -948,18 +948,6 @@ RAJA_STORAGE
 void LagrangeNodal(Domain* domain)
 {
    Domain_member fieldData[6] ;
-    int k = 9;
-    const Index_t* const elemToNode = domain->nodelist(k);
-   Index_t nd6i = elemToNode[6] ;
-    Real_t determ;
-  determ = domain->x(nd6i);
-		  printf(" 1=%f %d\n", determ, nd6i);
-				 
-	  if ( determ < 1e-6)
-	  {
-		  printf("f=%f i=%d\n", determ, k);
-         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
-      }
 	int myRank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
   Index_t dx = domain->sizeX() + 1;
@@ -979,6 +967,19 @@ void LagrangeNodal(Domain* domain)
             dx, dy, dz,
             myRank);
    CommSyncPosVel(*domain, dx, dy, dz, myRank) ;
+    
+   int k = 9;
+    const Index_t* const elemToNode = domain->nodelist(k);
+   Index_t nd6i = elemToNode[6] ;
+    Real_t determ;
+  determ = domain->x(nd6i);
+		  printf(" 1=%f %d\n", determ, nd6i);
+				 
+	  if ( determ < 1e-6)
+	  {
+		  printf("f=%f i=%d\n", determ, k);
+         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
+      }
   return;
 }
 
@@ -2180,21 +2181,10 @@ void CalcTimeConstraintsForElems(Domain* domain) {
 RAJA_STORAGE
 void LagrangeLeapFrog(Domain* domain)
 {
-#if defined(SEDOV_SYNC_POS_VEL_LATE)
-   Domain_member fieldData[6] ;
-#endif
-
    /* calculate nodal forces, accelerations, velocities, positions, with
     * applied boundary conditions and slide surface considerations */
    LagrangeNodal(domain);
 
-
-#if defined(SEDOV_SYNC_POS_VEL_LATE)
-#endif
-
-   /* calculate element quantities (i.e. velocity gradient & q), and update
-    * material states */
-   //LagrangeElements(domain, domain->numElem());
    domain->dtcourant() = 0;
 }
 
@@ -2287,7 +2277,6 @@ int main(int argc, char *argv[])
 //    printf("\n\n") ;
 // }
 
-   for (int i=0; i<2; i++)
    {
       TimeIncrement(*locDom) ;
 #ifdef GRADIENT
