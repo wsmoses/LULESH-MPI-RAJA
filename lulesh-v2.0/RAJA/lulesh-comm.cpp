@@ -59,6 +59,9 @@
 void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
               Index_t dx, Index_t dy, Index_t dz, int myRank) {
 
+   dx = 11;
+   dy = 11;
+   dx = 11;
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
    
    Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */

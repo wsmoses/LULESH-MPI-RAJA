@@ -950,9 +950,9 @@ void LagrangeNodal(Domain* domain)
    Domain_member fieldData[6] ;
 	int myRank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-  Index_t dx = domain->sizeX() + 1;
-  Index_t dy = domain->sizeY() + 1;
-  Index_t dz = domain->sizeZ() + 1;
+  Index_t dx = 11;
+  Index_t dy = 11;
+  Index_t dz = 11;
    CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
             dx, dy, dz,
 		   myRank) ;
@@ -973,7 +973,7 @@ void LagrangeNodal(Domain* domain)
    Index_t nd6i = elemToNode[6] ;
     Real_t determ;
   determ = domain->x(nd6i);
-		  printf(" 1=%f %d\n", determ, nd6i);
+		  printf("r=%d 1=%f %d dx=%d dy=%d dz=%d\n", myRank, determ, nd6i, dx, dy, dz);
 				 
 	  if ( determ < 1e-6)
 	  {
@@ -2250,83 +2250,17 @@ int main(int argc, char *argv[])
    grad_locDom = new Domain(numRanks, col, row, plane, opts.nx,
                        side, opts.numReg, opts.balance, opts.cost) ;
 
-#if USE_MPI   
-   fieldData = &Domain::nodalMass ;
-
-   // Initial domain boundary communication 
-
-   // End initialization
    MPI_Barrier(MPI_COMM_WORLD);
-#endif   
-   // BEGIN timestep to solution */
-#ifdef RAJA_USE_CALIPER
-   RAJA::Timer timer_main; 
-   timer_main.start("timer_main");
-#else
-#if USE_MPI   
-   double start = MPI_Wtime();
-#else
-   timeval start;
-   gettimeofday(&start, NULL) ;
-#endif
-#endif
-//debug to see region sizes
-// for(Int_t i = 0; i < locDom->numReg(); i++) {
-//    std::cout << "region " << i + 1<< " size = " << locDom->regElemSize(i) << std::endl;
-//    RAJA::forall<mat_exec_policy>(locDom->getRegionISet(i), [=] (int idx) { printf("%d ", idx) ; }) ;
-//    printf("\n\n") ;
-// }
-
-   {
-      TimeIncrement(*locDom) ;
 #ifdef GRADIENT
       __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom) ;
 #else
       LagrangeLeapFrog(locDom) ;
 #endif
 
-      if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
-         printf("cycle = %d, time = %e, dt=%e\n",
-                locDom->cycle(), double(locDom->time()), double(locDom->deltatime()) ) ;
-      }
-   }
-double elapsed_time;
-#ifdef RAJA_USE_CALIPER
-   // Use reduced max elapsed time
-   timer_main.stop("timer_main");
-   elapsed_time = timer_main.elapsed();
-#else
-#if USE_MPI   
-   elapsed_time = MPI_Wtime() - start;
-#else
-   timeval end;
-   gettimeofday(&end, NULL) ;
-   elapsed_time = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_usec - start.tv_usec))/1000000 ;
-#endif
-#endif
-   double elapsed_timeG;
-#if USE_MPI   
-   MPI_Reduce(&elapsed_time, &elapsed_timeG, 1, MPI_DOUBLE,
-              MPI_MAX, 0, MPI_COMM_WORLD);
-#else
-   elapsed_timeG = elapsed_time;
-#endif
-
-   // Write out final viz file */
-   if (opts.viz) {
-      DumpToVisit(*locDom, opts.numFiles, myRank, numRanks) ;
-   }
-   
-   if ((myRank == 0) && (opts.quiet == 0)) {
-      VerifyAndWriteFinalOutput(elapsed_timeG, *locDom, opts.nx, numRanks);
-   }
-
    delete locDom;
    delete grad_locDom;
 
-#if USE_MPI
    MPI_Finalize() ;
-#endif
 
    return 0 ;
 }
