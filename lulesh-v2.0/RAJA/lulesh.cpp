@@ -967,11 +967,11 @@ void LagrangeNodal(Domain* domain)
             domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
             myRank) ;
   fieldData[0] = &Domain::x ;
-  fieldData[1] = &Domain::y ;
-  fieldData[2] = &Domain::z ;
+  fieldData[1] = &Domain::x ;
+  fieldData[2] = &Domain::x ;
   fieldData[3] = &Domain::xd ;
-  fieldData[4] = &Domain::yd ;
-  fieldData[5] = &Domain::zd ;
+  fieldData[4] = &Domain::xd ;
+  fieldData[5] = &Domain::xd ;
 
    CommSend(*domain, MSG_SYNC_POS_VEL, 6, fieldData,
             domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,

@@ -540,11 +540,11 @@ void CommSyncPosVel(Domain& domain, int myRank) {
    MPI_Status status ;
 
    fieldData[0] = &Domain::x ;
-   fieldData[1] = &Domain::y ;
-   fieldData[2] = &Domain::z ;
+   fieldData[1] = &Domain::x ;
+   fieldData[2] = &Domain::x ;
    fieldData[3] = &Domain::xd ;
-   fieldData[4] = &Domain::yd ;
-   fieldData[5] = &Domain::zd ;
+   fieldData[4] = &Domain::xd ;
+   fieldData[5] = &Domain::xd ;
 
    Index_t opCount = dy * dz ;
 
