@@ -75,23 +75,11 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
    /* assume communication to 6 neighbors by default */
    rowMin = rowMax = colMin = colMax = planeMin = planeMax = true ;
 
-   if (domain.rowLoc() == 0) {
-      rowMin = false ;
-   }
-   if (domain.rowLoc() == (domain.tp()-1)) {
-      rowMax = false ;
-   }
    if (domain.colLoc() == 0) {
       colMin = false ;
    }
    if (domain.colLoc() == (domain.tp()-1)) {
       colMax = false ;
-   }
-   if (domain.planeLoc() == 0) {
-      planeMin = false ;
-   }
-   if (domain.planeLoc() == (domain.tp()-1)) {
-      planeMax = false ;
    }
 
    for (Index_t i=0; i<26; ++i) {
