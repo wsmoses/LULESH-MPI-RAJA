@@ -83,7 +83,7 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
                 MPI_COMM_WORLD, &status) ;
          Real_t *srcAddr = &domain.commDataRecv[0];
 	 for (Index_t fi=0 ; fi<4; ++fi) {
-            Domain_member dest = fieldData[fi] ;
+            Domain_member dest = fieldData[0] ;
             auto dat = &(domain.*dest)(0);
 	    for (Index_t i=0; i<dz; ++i) {
                for (Index_t j=0; j<dy; ++j) {
@@ -108,10 +108,9 @@ void CommSend(Domain& domain, int msgType,
 
       if (myRank == 1) {
          Real_t *destAddr = &domain.commDataSend[0];
-#pragma unroll
-	 for (Index_t fi=0; fi<xferFields; ++fi) {
             Domain_member src = fieldData[0] ;
             auto dat = &(domain.*src)(0);
+	 for (Index_t fi=0; fi<xferFields; ++fi) {
             for (Index_t i=0; i<dz; ++i) {
                for (Index_t j=0; j<dy; ++j) {
                   destAddr[i*dy + j] = dat[(i*dx*dy + j*dx)];
