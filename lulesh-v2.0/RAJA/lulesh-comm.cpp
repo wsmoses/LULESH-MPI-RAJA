@@ -103,15 +103,6 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
    /* post receives */
 
    /* receive data from neighboring domain faces */
-   if (planeMin && doRecv) {
-      /* contiguous memory */
-      int fromRank = myRank - domain.tp()*domain.tp() ;
-      int recvCount = dx * dy * xferFields ;
-      MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
-                recvCount, baseType, fromRank, msgType,
-                MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
-      ++pmsg ;
-   }
    if (planeMax) {
       /* contiguous memory */
       int fromRank = myRank + domain.tp()*domain.tp() ;
@@ -121,28 +112,10 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
                 MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
       ++pmsg ;
    }
-   if (rowMin && doRecv) {
-      /* semi-contiguous memory */
-      int fromRank = myRank - domain.tp() ;
-      int recvCount = dx * dz * xferFields ;
-      MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
-                recvCount, baseType, fromRank, msgType,
-                MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
-      ++pmsg ;
-   }
    if (rowMax) {
       /* semi-contiguous memory */
       int fromRank = myRank + domain.tp() ;
       int recvCount = dx * dz * xferFields ;
-      MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
-                recvCount, baseType, fromRank, msgType,
-                MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
-      ++pmsg ;
-   }
-   if (colMin && doRecv) {
-      /* scattered memory */
-      int fromRank = myRank - 1 ;
-      int recvCount = dy * dz * xferFields ;
       MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
                 recvCount, baseType, fromRank, msgType,
                 MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
@@ -159,33 +132,6 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
    }
 
    if (!planeOnly) {
-      /* receive data from domains connected only by an edge */
-      if (rowMin && colMin && doRecv) {
-         int fromRank = myRank - domain.tp() - 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm],
-                   dz * xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (rowMin && planeMin && doRecv) {
-         int fromRank = myRank - domain.tp()*domain.tp() - domain.tp() ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm],
-                   dx * xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (colMin && planeMin && doRecv) {
-         int fromRank = myRank - domain.tp()*domain.tp() - 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm],
-                   dy * xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
 
       if (rowMax && colMax) {
          int fromRank = myRank + domain.tp() + 1 ;
@@ -241,114 +187,6 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
          ++emsg ;
       }
 
-      if (rowMin && colMax && doRecv) {
-         int fromRank = myRank - domain.tp() + 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm],
-                   dz * xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (rowMax && planeMin && doRecv) {
-         int fromRank = myRank - domain.tp()*domain.tp() + domain.tp() ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm],
-                   dx * xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (colMax && planeMin && doRecv) {
-         int fromRank = myRank - domain.tp()*domain.tp() + 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm],
-                   dy * xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      /* receive data from domains connected only by a corner */
-      if (rowMin && colMin && planeMin && doRecv) {
-         /* corner at domain logical coord (0, 0, 0) */
-         int fromRank = myRank - domain.tp()*domain.tp() - domain.tp() - 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMin && colMin && planeMax) {
-         /* corner at domain logical coord (0, 0, 1) */
-         int fromRank = myRank + domain.tp()*domain.tp() - domain.tp() - 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMin && colMax && planeMin && doRecv) {
-         /* corner at domain logical coord (1, 0, 0) */
-         int fromRank = myRank - domain.tp()*domain.tp() - domain.tp() + 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMin && colMax && planeMax) {
-         /* corner at domain logical coord (1, 0, 1) */
-         int fromRank = myRank + domain.tp()*domain.tp() - domain.tp() + 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMin && planeMin && doRecv) {
-         /* corner at domain logical coord (0, 1, 0) */
-         int fromRank = myRank - domain.tp()*domain.tp() + domain.tp() - 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMin && planeMax) {
-         /* corner at domain logical coord (0, 1, 1) */
-         int fromRank = myRank + domain.tp()*domain.tp() + domain.tp() - 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMax && planeMin && doRecv) {
-         /* corner at domain logical coord (1, 1, 0) */
-         int fromRank = myRank - domain.tp()*domain.tp() + domain.tp() + 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMax && planeMax) {
-         /* corner at domain logical coord (1, 1, 1) */
-         int fromRank = myRank + domain.tp()*domain.tp() + domain.tp() + 1 ;
-         MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm +
-                                         emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL],
-                   xferFields, baseType, fromRank, msgType,
-                   MPI_COMM_WORLD, &domain.recvRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
    }
 }
 
@@ -422,22 +260,6 @@ void CommSend(Domain& domain, int msgType,
                    MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
          ++pmsg ;
       }
-      if (planeMax && doSend) {
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm] ;
-         for (Index_t fi=0 ; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<sendCount; ++i) {
-               destAddr[i] = (domain.*src)(dx*dy*(dz - 1) + i) ;
-            }
-            destAddr += sendCount ;
-         }
-         destAddr -= xferFields*sendCount ;
-
-         MPI_Isend(destAddr, xferFields*sendCount, baseType,
-                   myRank + domain.tp()*domain.tp(), msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
-         ++pmsg ;
-      }
    }
    if (rowMin | rowMax) {
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
@@ -461,24 +283,6 @@ void CommSend(Domain& domain, int msgType,
                    MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
          ++pmsg ;
       }
-      if (rowMax && doSend) {
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dz; ++i) {
-               for (Index_t j=0; j<dx; ++j) {
-                  destAddr[i*dx+j] = (domain.*src)(dx*(dy - 1) + i*dx*dy + j) ;
-               }
-            }
-            destAddr += sendCount ;
-         }
-         destAddr -= xferFields*sendCount ;
-
-         MPI_Isend(destAddr, xferFields*sendCount, baseType,
-                   myRank + domain.tp(), msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
-         ++pmsg ;
-      }
    }
    if (colMin | colMax) {
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
@@ -499,24 +303,6 @@ void CommSend(Domain& domain, int msgType,
 
          MPI_Isend(destAddr, xferFields*sendCount, baseType,
                    myRank - 1, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
-         ++pmsg ;
-      }
-      if (colMax && doSend) {
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dz; ++i) {
-               for (Index_t j=0; j<dy; ++j) {
-                  destAddr[i*dy + j] = (domain.*src)(dx - 1 + i*dx*dy + j*dx) ;
-               }
-            }
-            destAddr += sendCount ;
-         }
-         destAddr -= xferFields*sendCount ;
-
-         MPI_Isend(destAddr, xferFields*sendCount, baseType,
-                   myRank + 1, msgType,
                    MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
          ++pmsg ;
       }
@@ -565,108 +351,6 @@ void CommSend(Domain& domain, int msgType,
             Domain_member src = fieldData[fi] ;
             for (Index_t i=0; i<dy; ++i) {
                destAddr[i] = (domain.*src)(i*dx) ;
-            }
-            destAddr += dy ;
-         }
-         destAddr -= xferFields*dy ;
-         MPI_Isend(destAddr, xferFields*dy, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (rowMax && colMax && doSend) {
-         int toRank = myRank + domain.tp() + 1 ;
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm +
-                                          emsg * maxEdgeComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dz; ++i) {
-               destAddr[i] = (domain.*src)(dx*dy - 1 + i*dx*dy) ;
-            }
-            destAddr += dz ;
-         }
-         destAddr -= xferFields*dz ;
-         MPI_Isend(destAddr, xferFields*dz, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (rowMax && planeMax && doSend) {
-         int toRank = myRank + domain.tp()*domain.tp() + domain.tp() ;
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm +
-                                          emsg * maxEdgeComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dx; ++i) {
-              destAddr[i] = (domain.*src)(dx*(dy-1) + dx*dy*(dz-1) + i) ;
-            }
-            destAddr += dx ;
-         }
-         destAddr -= xferFields*dx ;
-         MPI_Isend(destAddr, xferFields*dx, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (colMax && planeMax && doSend) {
-         int toRank = myRank + domain.tp()*domain.tp() + 1 ;
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm +
-                                          emsg * maxEdgeComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dy; ++i) {
-               destAddr[i] = (domain.*src)(dx*dy*(dz-1) + dx - 1 + i*dx) ;
-            }
-            destAddr += dy ;
-         }
-         destAddr -= xferFields*dy ;
-         MPI_Isend(destAddr, xferFields*dy, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (rowMax && colMin && doSend) {
-         int toRank = myRank + domain.tp() - 1 ;
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm +
-                                          emsg * maxEdgeComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dz; ++i) {
-               destAddr[i] = (domain.*src)(dx*(dy-1) + i*dx*dy) ;
-            }
-            destAddr += dz ;
-         }
-         destAddr -= xferFields*dz ;
-         MPI_Isend(destAddr, xferFields*dz, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (rowMin && planeMax && doSend) {
-         int toRank = myRank + domain.tp()*domain.tp() - domain.tp() ;
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm +
-                                          emsg * maxEdgeComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dx; ++i) {
-               destAddr[i] = (domain.*src)(dx*dy*(dz-1) + i) ;
-            }
-            destAddr += dx ;
-         }
-         destAddr -= xferFields*dx ;
-         MPI_Isend(destAddr, xferFields*dx, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg]) ;
-         ++emsg ;
-      }
-
-      if (colMin && planeMax && doSend) {
-         int toRank = myRank + domain.tp()*domain.tp() - 1 ;
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm +
-                                          emsg * maxEdgeComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dy; ++i) {
-               destAddr[i] = (domain.*src)(dx*dy*(dz-1) + i*dx) ;
             }
             destAddr += dy ;
          }
@@ -727,117 +411,6 @@ void CommSend(Domain& domain, int msgType,
          ++emsg ;
       }
 
-      if (rowMin && colMin && planeMin) {
-         /* corner at domain logical coord (0, 0, 0) */
-         int toRank = myRank - domain.tp()*domain.tp() - domain.tp() - 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                      cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(0) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMin && colMin && planeMax && doSend) {
-         /* corner at domain logical coord (0, 0, 1) */
-         int toRank = myRank + domain.tp()*domain.tp() - domain.tp() - 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx*dy*(dz - 1) ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMin && colMax && planeMin) {
-         /* corner at domain logical coord (1, 0, 0) */
-         int toRank = myRank - domain.tp()*domain.tp() - domain.tp() + 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx - 1 ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMin && colMax && planeMax && doSend) {
-         /* corner at domain logical coord (1, 0, 1) */
-         int toRank = myRank + domain.tp()*domain.tp() - domain.tp() + 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx*dy*(dz - 1) + (dx - 1) ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMin && planeMin) {
-         /* corner at domain logical coord (0, 1, 0) */
-         int toRank = myRank - domain.tp()*domain.tp() + domain.tp() - 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx*(dy - 1) ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMin && planeMax && doSend) {
-         /* corner at domain logical coord (0, 1, 1) */
-         int toRank = myRank + domain.tp()*domain.tp() + domain.tp() - 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx*dy*(dz - 1) + dx*(dy - 1) ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMax && planeMin) {
-         /* corner at domain logical coord (1, 1, 0) */
-         int toRank = myRank - domain.tp()*domain.tp() + domain.tp() + 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx*dy - 1 ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
-      if (rowMax && colMax && planeMax && doSend) {
-         /* corner at domain logical coord (1, 1, 1) */
-         int toRank = myRank + domain.tp()*domain.tp() + domain.tp() + 1 ;
-         Real_t *comBuf = &domain.commDataSend[pmsg * maxPlaneComm +
-                                                emsg * maxEdgeComm +
-                                         cmsg * CACHE_COHERENCE_PAD_REAL] ;
-         Index_t idx = dx*dy*dz - 1 ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            comBuf[fi] = (domain.*fieldData[fi])(idx) ;
-         }
-         MPI_Isend(comBuf, xferFields, baseType, toRank, msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg+emsg+cmsg]) ;
-         ++cmsg ;
-      }
    }
 
    MPI_Waitall(26, domain.sendRequest, status) ;
@@ -1394,43 +967,6 @@ void CommSyncPosVel(Domain& domain) {
                                        emsg * maxEdgeComm] ;
       MPI_Wait(&domain.recvRequest[pmsg+emsg], &status) ;
       ++emsg ;
-   }
-
-   if (rowMin && colMin && planeMax) {
-      /* corner at domain logical coord (0, 0, 1) */
-      Real_t *comBuf = &domain.commDataRecv[pmsg * maxPlaneComm +
-                                             emsg * maxEdgeComm +
-                                      cmsg * CACHE_COHERENCE_PAD_REAL] ;
-      Index_t idx = dx*dy*(dz - 1) ;
-      MPI_Wait(&domain.recvRequest[pmsg+emsg+cmsg], &status) ;
-      ++cmsg ;
-   }
-   if (rowMin && colMax && planeMax) {
-      /* corner at domain logical coord (1, 0, 1) */
-      Real_t *comBuf = &domain.commDataRecv[pmsg * maxPlaneComm +
-                                             emsg * maxEdgeComm +
-                                      cmsg * CACHE_COHERENCE_PAD_REAL] ;
-      Index_t idx = dx*dy*(dz - 1) + (dx - 1) ;
-      MPI_Wait(&domain.recvRequest[pmsg+emsg+cmsg], &status) ;
-      ++cmsg ;
-   }
-   if (rowMax && colMin && planeMax) {
-      /* corner at domain logical coord (0, 1, 1) */
-      Real_t *comBuf = &domain.commDataRecv[pmsg * maxPlaneComm +
-                                             emsg * maxEdgeComm +
-                                      cmsg * CACHE_COHERENCE_PAD_REAL] ;
-      Index_t idx = dx*dy*(dz - 1) + dx*(dy - 1) ;
-      MPI_Wait(&domain.recvRequest[pmsg+emsg+cmsg], &status) ;
-      ++cmsg ;
-   }
-   if (rowMax && colMax && planeMax) {
-      /* corner at domain logical coord (1, 1, 1) */
-      Real_t *comBuf = &domain.commDataRecv[pmsg * maxPlaneComm +
-                                             emsg * maxEdgeComm +
-                                      cmsg * CACHE_COHERENCE_PAD_REAL] ;
-      Index_t idx = dx*dy*dz - 1 ;
-      MPI_Wait(&domain.recvRequest[pmsg+emsg+cmsg], &status) ;
-      ++cmsg ;
    }
 }
 
