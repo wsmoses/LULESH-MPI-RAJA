@@ -65,15 +65,13 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
    
    Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */
-   Domain_member fieldData[6] ;
+   Domain_member fieldData[4] ;
    MPI_Status status ;
 
    fieldData[0] = &Domain::x ;
-   fieldData[1] = &Domain::x ;
+   fieldData[1] = &Domain::xd ;
    fieldData[2] = &Domain::x ;
    fieldData[3] = &Domain::xd ;
-   fieldData[4] = &Domain::xd ;
-   fieldData[5] = &Domain::xd ;
 
    Index_t opCount = dy * dz ;
 
@@ -84,7 +82,7 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
                 recvCount, baseType, fromRank, msgType,
                 MPI_COMM_WORLD, &status) ;
          Real_t *srcAddr = &domain.commDataRecv[0];
-	 for (Index_t fi=0 ; fi<xferFields; ++fi) {
+	 for (Index_t fi=0 ; fi<4; ++fi) {
             Domain_member dest = fieldData[fi] ;
             auto dat = &(domain.*dest)(0);
 	    for (Index_t i=0; i<dz; ++i) {

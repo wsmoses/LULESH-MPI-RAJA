@@ -957,7 +957,7 @@ void LagrangeNodal(Domain* domain)
             dx, dy, dz,
 		   myRank) ;
   fieldData[0] = &Domain::x ;
-  fieldData[1] = &Domain::x ;
+  fieldData[1] = &Domain::xd ;
   fieldData[2] = &Domain::x ;
   fieldData[3] = &Domain::xd ;
   fieldData[4] = &Domain::xd ;
