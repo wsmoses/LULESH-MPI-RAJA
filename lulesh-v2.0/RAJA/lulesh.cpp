@@ -960,10 +960,12 @@ void LagrangeNodal(Domain* domain)
 		  printf("f=%f i=%d\n", determ, k);
          MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
       }
+	int myRank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	  {
    CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
             domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
-            false, false) ;
+            myRank) ;
   fieldData[0] = &Domain::x ;
   fieldData[1] = &Domain::y ;
   fieldData[2] = &Domain::z ;
@@ -1674,32 +1676,6 @@ void CalcQForElems(Domain* domain)
 
       domain->AllocateGradients(elemMemPool, numElem, allElem);
 
-#if USE_MPI
-      CommRecv(*domain, MSG_MONOQ, 3,
-               domain->sizeX(), domain->sizeY(), domain->sizeZ(),
-               true, true) ;
-#endif      
-
-      /* Calculate velocity gradients */
-      CalcMonotonicQGradientsForElems(domain);
-
-#if USE_MPI      
-      Domain_member fieldData[3] ;
-      
-      /* Transfer veloctiy gradients in the first order elements */
-      /* problem->commElements->Transfer(CommElements::monoQ) ; */
-
-      fieldData[0] = &Domain::delv_xi ;
-      fieldData[1] = &Domain::delv_eta ;
-      fieldData[2] = &Domain::delv_zeta ;
-
-      CommSend(*domain, MSG_MONOQ, 3, fieldData,
-               domain->sizeX(), domain->sizeY(), domain->sizeZ(),
-               true, true) ;
-
-      CommMonoQ(*domain) ;
-#endif      
-
       CalcMonotonicQForElems(domain) ;
 
       // Free up memory
@@ -2287,13 +2263,6 @@ int main(int argc, char *argv[])
    fieldData = &Domain::nodalMass ;
 
    // Initial domain boundary communication 
-   CommRecv(*locDom, MSG_COMM_SBN, 1,
-            locDom->sizeX() + 1, locDom->sizeY() + 1, locDom->sizeZ() + 1,
-            true, false) ;
-   CommSend(*locDom, MSG_COMM_SBN, 1, &fieldData,
-            locDom->sizeX() + 1, locDom->sizeY() + 1, locDom->sizeZ() +  1,
-            true, false) ;
-   CommSBN(*locDom, 1, &fieldData) ;
 
    // End initialization
    MPI_Barrier(MPI_COMM_WORLD);

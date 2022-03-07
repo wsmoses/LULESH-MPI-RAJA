@@ -57,9 +57,8 @@
 
 /* doRecv flag only works with regular block structure */
 void CommRecv(Domain& domain, int msgType, Index_t xferFields,
-              Index_t dx, Index_t dy, Index_t dz, bool doRecv, bool planeOnly) {
+              Index_t dx, Index_t dy, Index_t dz, int myRank) {
 
-   int myRank ;
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
 
    bool colMax = true;
@@ -71,7 +70,6 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
       domain.recvRequest[i] = MPI_REQUEST_NULL ;
    }
 
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
 
    if (colMax) {
       int fromRank = myRank + 1 ;
