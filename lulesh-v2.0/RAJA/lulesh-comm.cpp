@@ -60,16 +60,6 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
               Index_t dx, Index_t dy, Index_t dz, int myRank) {
 
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
-
-   bool colMax = true;
-   if (domain.colLoc() == (domain.tp()-1)) {
-      colMax = false ;
-   }
-
-   for (Index_t i=0; i<26; ++i) {
-      domain.recvRequest[i] = MPI_REQUEST_NULL ;
-   }
-
    
    Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */
    Domain_member fieldData[6] ;
@@ -87,11 +77,10 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields0,
    if (myRank == 0) {
       int fromRank = 1 - myRank ;
       int recvCount = dy * dz * xferFields ;
-      MPI_Irecv(&domain.commDataRecv[0],
+      MPI_Recv(&domain.commDataRecv[0],
                 recvCount, baseType, fromRank, msgType,
-                MPI_COMM_WORLD, &domain.recvRequest[0]) ;
+                MPI_COMM_WORLD, &status) ;
          Real_t *srcAddr = &domain.commDataRecv[0];
-         MPI_Wait(&domain.recvRequest[0], &status) ;
          for (Index_t fi=0 ; fi<xferFields; ++fi) {
             Domain_member dest = fieldData[fi] ;
             for (Index_t i=0; i<dz; ++i) {
@@ -111,10 +100,6 @@ void CommSend(Domain& domain, int msgType,
               Index_t dx, Index_t dy, Index_t dz, int myRank)
 {
    MPI_Datatype baseType = ((sizeof(Real_t) == 4) ? MPI_FLOAT : MPI_DOUBLE) ;
-   bool colMin = true;
-   if (domain.colLoc() == 0) {
-      colMin = false ;
-   }
 
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
       int sendCount = dy * dz ;
@@ -130,9 +115,8 @@ void CommSend(Domain& domain, int msgType,
             }
             destAddr += sendCount ;
          }
-         destAddr -= xferFields*sendCount ;
 
-         MPI_Send(destAddr, xferFields*sendCount, baseType,
+         MPI_Send(&domain.commDataSend[0], xferFields*sendCount, baseType,
                    myRank - 1, msgType,
                    MPI_COMM_WORLD);
       }
