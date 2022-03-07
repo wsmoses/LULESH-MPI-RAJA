@@ -100,35 +100,12 @@ void CommRecv(Domain& domain, int msgType, Index_t xferFields,
 
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
 
-   /* post receives */
-
-   /* receive data from neighboring domain faces */
-   if (planeMax) {
-      /* contiguous memory */
-      int fromRank = myRank + domain.tp()*domain.tp() ;
-      int recvCount = dx * dy * xferFields ;
-      MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
-                recvCount, baseType, fromRank, msgType,
-                MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
-      ++pmsg ;
-   }
-   if (rowMax) {
-      /* semi-contiguous memory */
-      int fromRank = myRank + domain.tp() ;
-      int recvCount = dx * dz * xferFields ;
-      MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
-                recvCount, baseType, fromRank, msgType,
-                MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
-      ++pmsg ;
-   }
    if (colMax) {
-      /* scattered memory */
       int fromRank = myRank + 1 ;
       int recvCount = dy * dz * xferFields ;
       MPI_Irecv(&domain.commDataRecv[pmsg * maxPlaneComm],
                 recvCount, baseType, fromRank, msgType,
                 MPI_COMM_WORLD, &domain.recvRequest[pmsg]) ;
-      ++pmsg ;
    }
 }
 
@@ -180,53 +157,6 @@ void CommSend(Domain& domain, int msgType,
 
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
 
-   /* post sends */
-
-   if (planeMin | planeMax) {
-      /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
-      int sendCount = dx * dy ;
-
-      if (planeMin) {
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm] ;
-         for (Index_t fi=0 ; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<sendCount; ++i) {
-               destAddr[i] = (domain.*src)(i) ;
-            }
-            destAddr += sendCount ;
-         }
-         destAddr -= xferFields*sendCount ;
-
-         MPI_Isend(destAddr, xferFields*sendCount, baseType,
-                   myRank - domain.tp()*domain.tp(), msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
-         ++pmsg ;
-      }
-   }
-   if (rowMin | rowMax) {
-      /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
-      int sendCount = dx * dz ;
-
-      if (rowMin) {
-         destAddr = &domain.commDataSend[pmsg * maxPlaneComm] ;
-         for (Index_t fi=0; fi<xferFields; ++fi) {
-            Domain_member src = fieldData[fi] ;
-            for (Index_t i=0; i<dz; ++i) {
-               for (Index_t j=0; j<dx; ++j) {
-                  destAddr[i*dx+j] = (domain.*src)(i*dx*dy + j) ;
-               }
-            }
-            destAddr += sendCount ;
-         }
-         destAddr -= xferFields*sendCount ;
-
-         MPI_Isend(destAddr, xferFields*sendCount, baseType,
-                   myRank - domain.tp(), msgType,
-                   MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
-         ++pmsg ;
-      }
-   }
-   if (colMin | colMax) {
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
       int sendCount = dy * dz ;
 
@@ -248,7 +178,6 @@ void CommSend(Domain& domain, int msgType,
                    MPI_COMM_WORLD, &domain.sendRequest[pmsg]) ;
          ++pmsg ;
       }
-   }
 
    MPI_Waitall(26, domain.sendRequest, status) ;
 }
@@ -718,30 +647,6 @@ void CommSyncPosVel(Domain& domain) {
    fieldData[5] = &Domain::zd ;
 
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank) ;
-
-   if (planeMin | planeMax) {
-      /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
-      Index_t opCount = dx * dy ;
-
-      if (planeMax) {
-         /* contiguous memory */
-         srcAddr = &domain.commDataRecv[pmsg * maxPlaneComm] ;
-         MPI_Wait(&domain.recvRequest[pmsg], &status) ;
-         ++pmsg ;
-      }
-   }
-
-   if (rowMin | rowMax) {
-      /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
-      Index_t opCount = dx * dz ;
-
-      if (rowMax) {
-         /* contiguous memory */
-         srcAddr = &domain.commDataRecv[pmsg * maxPlaneComm] ;
-         MPI_Wait(&domain.recvRequest[pmsg], &status) ;
-         ++pmsg ;
-      }
-   }
 
       /* ASSUMING ONE DOMAIN PER RANK, CONSTANT BLOCK SIZE HERE */
       Index_t opCount = dy * dz ;
