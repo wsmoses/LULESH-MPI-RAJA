@@ -947,23 +947,21 @@ void CalcPositionForNodes(Domain* domain, const Real_t dt)
 RAJA_STORAGE
 void LagrangeNodal(Domain* domain)
 {
-   Domain_member fieldData[6] ;
+   Domain_member fieldData[4] ;
 	int myRank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
   Index_t dx = 11;
   Index_t dy = 11;
   Index_t dz = 11;
-   CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
+   CommRecv(*domain, MSG_SYNC_POS_VEL, 4,
             dx, dy, dz,
 		   myRank) ;
   fieldData[0] = &Domain::x ;
   fieldData[1] = &Domain::xd ;
   fieldData[2] = &Domain::x ;
   fieldData[3] = &Domain::xd ;
-  fieldData[4] = &Domain::xd ;
-  fieldData[5] = &Domain::xd ;
 
-   CommSend(*domain, MSG_SYNC_POS_VEL, 6, fieldData,
+   CommSend(*domain, MSG_SYNC_POS_VEL, 4, fieldData,
             dx, dy, dz,
             myRank);
    CommSyncPosVel(*domain, dx, dy, dz, myRank) ;
