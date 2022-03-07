@@ -962,10 +962,12 @@ void LagrangeNodal(Domain* domain)
       }
 	int myRank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-	  {
+  Index_t dx = domain->sizeX() + 1;
+  Index_t dy = domain->sizeY() + 1;
+  Index_t dz = domain->sizeZ() + 1;
    CommRecv(*domain, MSG_SYNC_POS_VEL, 6,
-            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
-            myRank) ;
+            dx, dy, dz,
+		   myRank) ;
   fieldData[0] = &Domain::x ;
   fieldData[1] = &Domain::x ;
   fieldData[2] = &Domain::x ;
@@ -974,10 +976,9 @@ void LagrangeNodal(Domain* domain)
   fieldData[5] = &Domain::xd ;
 
    CommSend(*domain, MSG_SYNC_POS_VEL, 6, fieldData,
-            domain->sizeX() + 1, domain->sizeY() + 1, domain->sizeZ() + 1,
+            dx, dy, dz,
             myRank);
-   CommSyncPosVel(*domain, myRank) ;
-}   
+   CommSyncPosVel(*domain, dx, dy, dz, myRank) ;
   return;
 }
 

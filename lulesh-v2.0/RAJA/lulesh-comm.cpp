@@ -531,12 +531,9 @@ void CommSBN(Domain& domain, int xferFields, Domain_member *fieldData) {
 
 /******************************************/
 
-void CommSyncPosVel(Domain& domain, int myRank) {
+void CommSyncPosVel(Domain& domain, Index_t dx, Index_t dy, Index_t dz, int myRank) {
    Index_t xferFields = 6 ; /* x, y, z, xd, yd, zd */
    Domain_member fieldData[6] ;
-   Index_t dx = domain.sizeX() + 1 ;
-   Index_t dy = domain.sizeY() + 1 ;
-   Index_t dz = domain.sizeZ() + 1 ;
    MPI_Status status ;
 
    fieldData[0] = &Domain::x ;
