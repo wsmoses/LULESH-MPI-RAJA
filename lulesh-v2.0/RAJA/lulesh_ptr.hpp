@@ -508,7 +508,7 @@ class Domain {
    MPI_Request sendRequest[26] ; // 6 faces + 12 edges + 8 corners
 #endif
 
-  private:
+  //private:
 
    void BuildMeshTopology(Index_t edgeNodes, Index_t edgeElems);
    void BuildMeshCoordinates(Index_t nx, Index_t edgeNodes);
