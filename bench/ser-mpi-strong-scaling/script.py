@@ -1,6 +1,7 @@
 #!/usr/bin/python3.8
 import os
-
+import pathlib
+scriptdir = pathlib.Path(__file__).parent.resolve()
 
 def printfun(rank, blocklist,itercount):
   for s in blocklist:
